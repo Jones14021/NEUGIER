@@ -27,10 +27,12 @@ export function StopList(p: Props) {
   const listRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<{ id: string; over: number; y: number; startY: number } | null>(null);
 
-  const indexAt = (clientY: number) => {
+  const indexAt = (clientY: number, dragId: string) => {
     const rows = [...(listRef.current?.querySelectorAll<HTMLElement>('[data-stop]') ?? [])];
     let idx = rows.length;
     for (let i = 0; i < rows.length; i++) {
+      // Die mitgezogene Zeile bewegt sich mit dem Zeiger und darf nicht mitzählen
+      if (rows[i].dataset.stop === dragId) continue;
       const r = rows[i].getBoundingClientRect();
       if (clientY < r.top + r.height / 2) {
         idx = i;
@@ -49,7 +51,16 @@ export function StopList(p: Props) {
 
   const onMove = (e: React.PointerEvent) => {
     if (!drag) return;
-    setDrag({ ...drag, over: indexAt(e.clientY), y: e.clientY });
+    // Am Rand des Scrollbereichs automatisch scrollen
+    const scroller = listRef.current?.closest('.panel-scroll, .page');
+    let scrolled = 0;
+    if (scroller) {
+      const r = scroller.getBoundingClientRect();
+      if (e.clientY > r.bottom - 50) scrolled = 14;
+      else if (e.clientY < r.top + 50) scrolled = -14;
+      scroller.scrollTop += scrolled;
+    }
+    setDrag({ ...drag, over: indexAt(e.clientY, drag.id), y: e.clientY, startY: drag.startY - scrolled });
   };
 
   const onUp = () => {
@@ -70,9 +81,9 @@ export function StopList(p: Props) {
         return (
           <div key={s.id}>
             {drag && drag.over === i && !dragging && <div className="drop-line" />}
-            {leg && (
+            {leg && leg.durationSec > 0 && (
               <div className="leg small muted">
-                ↓ {leg.durationSec ? `${fmtHours(leg.durationSec)} · ${fmtKm(leg.distanceMeters)}` : 'keine Straßenroute'}
+                ↓ {fmtHours(leg.durationSec)} · {fmtKm(leg.distanceMeters)}
               </div>
             )}
             <div

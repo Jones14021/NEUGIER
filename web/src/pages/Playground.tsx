@@ -36,15 +36,17 @@ const KEY = 'neugier.playground';
 export function Playground() {
   const { state: real, apply, toast, config } = useTrip();
   const [params, setParams] = useSearchParams();
-  const [draft, setDraft] = useState<TripState>(() => {
-    const saved = JSON.parse(sessionStorage.getItem(KEY) ?? 'null') as TripState | null;
-    return saved && saved.trip.id === real.trip.id ? saved : real;
+  // Entwurf = echte Planung + eigene Änderungen (so fließen Live-Änderungen anderer weiter ein)
+  const [draftOps, setDraftOps] = useState<Op[]>(() => {
+    const saved = JSON.parse(sessionStorage.getItem(KEY) ?? 'null') as { tripId: string; ops: Op[] } | null;
+    return saved?.tripId === real.trip.id ? saved.ops : [];
   });
+  const draft = useMemo(() => applyOpsLocal(real, draftOps), [real, draftOps]);
   const [edit, setEdit] = useState<{ stop: Stop; isNew: boolean } | null>(null);
   const [review, setReview] = useState<{ busy: boolean; res?: ChatResponse; error?: string } | null>(null);
   const [showApply, setShowApply] = useState(false);
 
-  useEffect(() => sessionStorage.setItem(KEY, JSON.stringify(draft)), [draft]);
+  useEffect(() => sessionStorage.setItem(KEY, JSON.stringify({ tripId: real.trip.id, ops: draftOps })), [draftOps, real.trip.id]);
 
   const days = useMemo(() => sortedDays(draft.days), [draft.days]);
   const dayId = params.get('tag') ?? findToday(days)?.id ?? days[0]?.id;
@@ -53,7 +55,7 @@ export function Playground() {
   const dm = useDayMap(draft, day, null, true);
   const changes = useMemo(() => diffPlans(real, draft), [real, draft]);
 
-  const change = (ops: Op[]) => setDraft((d) => applyOpsLocal(d, ops));
+  const change = (ops: Op[]) => setDraftOps((d) => [...d, ...ops]);
   const goto = (id: string) => setParams({ tag: id }, { replace: true });
 
   const dragStop = (id: string, p: { lat: number; lng: number }) =>
@@ -82,6 +84,8 @@ export function Playground() {
       `Spielplatz übernommen (${selected.length})`,
     );
     setShowApply(false);
+    // Nicht übernommene Änderungen bleiben im Spielplatz
+    if (selected.length === changes.length) setDraftOps([]);
     toast('In die Planung übernommen – rückgängig über die Historie');
   };
 
@@ -133,7 +137,7 @@ export function Playground() {
             <button className="btn small" disabled={!config.llmConfigured || review?.busy} onClick={checkWithAi} title={config.llmConfigured ? '' : 'Kein KI-Key hinterlegt'}>
               <Sparkles size={14} /> {review?.busy ? 'KI prüft …' : 'Vorschlag mit KI prüfen'}
             </button>
-            <button className="btn small" disabled={!changes.length} onClick={() => confirm('Spielplatz auf echte Planung zurücksetzen?') && setDraft(real)}>
+            <button className="btn small" disabled={!changes.length} onClick={() => confirm('Spielplatz auf echte Planung zurücksetzen?') && setDraftOps([])}>
               <RotateCcw size={14} /> Zurücksetzen
             </button>
           </div>

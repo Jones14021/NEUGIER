@@ -243,7 +243,7 @@ function DayCard(p: {
       </div>
       {p.viewers.length > 0 && <p className="small muted">👀 {p.viewers.join(', ')}</p>}
       {p.active && p.canPlan && (
-        <div className="row wrap" onClick={(e) => e.stopPropagation()}>
+        <div className="row day-card-actions" onClick={(e) => e.stopPropagation()}>
           <button className="btn small primary" onClick={p.onOpen}>
             Tag öffnen
           </button>
