@@ -4,9 +4,8 @@ import type { Comment } from '@neugier/shared';
 import { api } from '../api';
 import { useTrip } from '../store';
 
-/** Kommentare zu Tag oder Stopp – jederzeit von allen bearbeitbar (auch Zuschauer). */
 export function Comments({ targetId, compact }: { targetId: string; compact?: boolean }) {
-  const { state, toast } = useTrip();
+  const { state, toast, canEdit } = useTrip();
   const list = state.comments.filter((c) => c.targetId === targetId).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   const [open, setOpen] = useState(!compact);
   const [text, setText] = useState('');
@@ -21,6 +20,7 @@ export function Comments({ targetId, compact }: { targetId: string; compact?: bo
   };
 
   if (!open) {
+    if (!canEdit && !list.length) return null;
     return (
       <button className="link small" onClick={() => setOpen(true)}>
         <MessageSquare size={14} /> {list.length ? `${list.length} Kommentar${list.length > 1 ? 'e' : ''}` : 'Kommentieren'}
@@ -44,13 +44,13 @@ export function Comments({ targetId, compact }: { targetId: string; compact?: bo
               <strong>{c.author}</strong> {c.text}
               {c.updatedBy && c.updatedBy !== c.author && <span className="muted"> (bearb. {c.updatedBy})</span>}
             </span>
-            <button className="icon-btn" title="Bearbeiten (leer = löschen)" onClick={() => setEdit(c)}>
+            {canEdit && <button className="icon-btn" title="Bearbeiten (leer = löschen)" onClick={() => setEdit(c)}>
               <Pencil size={14} />
-            </button>
+            </button>}
           </div>
         ),
       )}
-      <div className="row">
+      {canEdit && <div className="row">
         <input
           placeholder="Kommentar …"
           value={text}
@@ -62,7 +62,7 @@ export function Comments({ targetId, compact }: { targetId: string; compact?: bo
         <button className="btn small" disabled={!text.trim()} onClick={() => save(undefined, text).then(() => setText(''))}>
           Senden
         </button>
-      </div>
+      </div>}
     </div>
   );
 }

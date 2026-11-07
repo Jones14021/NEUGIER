@@ -1,6 +1,6 @@
 import type { Server } from 'node:http';
 import { WebSocketServer, type WebSocket } from 'ws';
-import type { Change, Role, TripState } from '@neugier/shared';
+import type { Change, LiveLocation, Role, TripState } from '@neugier/shared';
 import { canSeePlanning } from '@neugier/shared';
 import { viewerState } from './api';
 import { userFromCookieHeader } from './auth';
@@ -72,6 +72,10 @@ export function attachRealtime(server: Server): void {
         if (viewerSnapshot) send(c.ws, { type: 'state', state: viewerSnapshot });
       }
     }
+  });
+
+  events.on('location', ({ tripId, location }: { tripId: string; location: LiveLocation }) => {
+    for (const client of clients) if (client.tripId === tripId) send(client.ws, { type: 'location', location });
   });
 
   events.on('database-restored', () => {

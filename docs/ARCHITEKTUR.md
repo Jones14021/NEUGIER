@@ -145,8 +145,8 @@ sequenceDiagram
 | Rolle | Rechte |
 |---|---|
 | Wartet auf Freigabe | nichts (nach erstem Google-Login) |
-| Zuschauer | lesen, Kommentare schreiben/bearbeiten, KI fragen |
-| Mitarbeiter | alles planen, importieren, Ausgaben, Erinnerungen |
+| Zuschauer | Reiseübersicht und Erinnerungen lesen, geteilten Standort sehen |
+| Mitarbeiter | planen, kommentieren, importieren, Ausgaben und Erinnerungen bearbeiten, Standort teilen |
 | Admin | zusätzlich Nutzerverwaltung + KI-Einstellungen |
 
 Der erste Nutzer und alle E-Mails aus `ADMIN_EMAILS` werden automatisch Admin.
@@ -197,6 +197,8 @@ Die Konflikt-UI zeigt pro Feld „Aktuell“ vs. „Aus Datei“ zum Anklicken. 
 * **Places API (New)** für die Ortssuche beim Anlegen von Stopps.
 * **Quicklinks**: Jeder Stopp, jede Tagesroute und die Gesamtroute öffnen per Google-Maps-URL (`/maps/dir/?api=1…`) direkt die Navigation (auf Android in der Google-Maps-App).
 * Ohne API-Key: vereinfachte Vorschau (Punkte + Luftlinien), alle Quicklinks funktionieren trotzdem.
+* Mitarbeiter können auf der Reiseübersicht ihren GPS-Standort freigeben. Solange die App geöffnet und die Freigabe aktiv ist, speichert der Server die letzte aktuelle Messung pro Reise in SQLite und verteilt sie per WebSocket an alle Rollen. Die Freigabe läuft beim Seitenwechsel weiter und endet beim Deaktivieren oder Schließen der App. Browser benötigen dafür Standortfreigabe und HTTPS (lokal genügt localhost).
+* Stammt die letzte Messung nicht vom aktuellen Reisetag, zeigt die Übersicht das geplante Übernachtungsziel dieses Tages. Fehlen Koordinaten, wird es bei verfügbarer Places API anhand des Namens gesucht; ohne Treffer oder geplantes Ziel gibt es keinen Standortmarker. Für Neuseeland gilt `Pacific/Auckland`, ansonsten UTC; eine Reise kann eine IANA-Zeitzone über `timeZone` festlegen. Der gespeicherte Standort ist Teil des Datenbank-Backups und bleibt nach Deaktivieren bis zu einer neuen Messung erhalten.
 
 ## KI-Assistent
 

@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { AppConfig, Change, Op, Trip, TripState, User } from '@neugier/shared';
 import { applyOpsLocal, canSeePlanning } from '@neugier/shared';
 import { api, ApiError, sendOps } from './api';
+import { useGeoWatch } from './hooks';
 
 interface Presence {
   userId: string;
@@ -26,6 +27,9 @@ interface Ctx {
   canEdit: boolean;
   /** Darf Tagesplanung, Ausgaben, Assistent etc. sehen (nicht Zuschauer). */
   canPlan: boolean;
+  liveSharing: boolean;
+  setLiveSharing: (enabled: boolean) => void;
+  geo: ReturnType<typeof useGeoWatch>;
   /** WebSocket verbunden. */
   online: boolean;
   /** Offline gespeicherte, noch nicht gesendete Änderungen. */
@@ -84,6 +88,10 @@ export function StoreProvider({ config, user, children }: { config: AppConfig; u
   const [online, setOnline] = useState(false);
   const [outbox, setOutbox] = useState<Pending[]>(() => loadJson<Pending[]>(OUTBOX_KEY, []));
   const [toastMsg, setToastMsg] = useState('');
+  const [liveSharing, setLiveSharingRaw] = useState(() => localStorage.getItem('neugier.live') === '1');
+  const canPlan = canSeePlanning(user.role);
+  const geo = useGeoWatch(canPlan && liveSharing);
+  const lastLocationSent = useRef(0);
   const wsRef = useRef<WebSocket | null>(null);
   const focusDay = useRef<string | null>(null);
   const flushing = useRef(false);
@@ -104,6 +112,23 @@ export function StoreProvider({ config, user, children }: { config: AppConfig; u
     setToastMsg(msg);
     setTimeout(() => setToastMsg((m) => (m === msg ? '' : m)), 3500);
   }, []);
+
+  const setLiveSharing = useCallback((enabled: boolean) => {
+    localStorage.setItem('neugier.live', enabled ? '1' : '0');
+    setLiveSharingRaw(enabled);
+  }, []);
+
+  useEffect(() => { lastLocationSent.current = 0; }, [tripId, liveSharing]);
+  useEffect(() => {
+    if (!tripId || !canPlan || !liveSharing || !geo.pos) return;
+    const position = geo.pos;
+    const wait = Math.max(0, 15_000 - (Date.now() - lastLocationSent.current));
+    const timer = setTimeout(() => {
+      lastLocationSent.current = Date.now();
+      void api(`/trips/${tripId}/location`, { body: position }).catch((error) => toast(`Standort nicht geteilt: ${(error as Error).message}`));
+    }, wait);
+    return () => clearTimeout(timer);
+  }, [tripId, canPlan, liveSharing, geo.pos, toast]);
 
   /** Server-Stand laden und noch nicht gesendete lokale Änderungen darüberlegen. */
   const fetchState = useCallback(
@@ -183,6 +208,7 @@ export function StoreProvider({ config, user, children }: { config: AppConfig; u
         const msg = JSON.parse(ev.data);
         if (msg.type === 'changes') setState((s) => (s ? applyChanges(s, msg.changes) : s));
         if (msg.type === 'state') setState(msg.state);
+        if (msg.type === 'location') setState((s) => (s ? { ...s, liveLocation: msg.location } : s));
         if (msg.type === 'presence') setPresence(msg.users);
       };
       ws.onclose = () => {
@@ -243,7 +269,6 @@ export function StoreProvider({ config, user, children }: { config: AppConfig; u
     [subscribe],
   );
 
-  const canPlan = canSeePlanning(user.role);
   const value = useMemo<Ctx>(
     () => ({
       config,
@@ -255,13 +280,16 @@ export function StoreProvider({ config, user, children }: { config: AppConfig; u
       pendingCount: outbox.length,
       canEdit: canPlan,
       canPlan,
+      liveSharing,
+      setLiveSharing,
+      geo,
       apply,
       selectTrip,
       setFocusDay,
       reload,
       toast,
     }),
-    [config, user, trips, state, presence, online, outbox.length, canPlan, apply, selectTrip, setFocusDay, reload, toast],
+    [config, user, trips, state, presence, online, outbox.length, canPlan, liveSharing, setLiveSharing, geo, apply, selectTrip, setFocusDay, reload, toast],
   );
 
   return (

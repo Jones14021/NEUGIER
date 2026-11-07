@@ -25,16 +25,15 @@ docker compose -f docker-compose.dev.yml up
 
 → http://localhost:5173 (Vite) mit API auf 8080. Alternativ ohne Docker: `nix-shell`, dann `npm install && npm run dev`.
 
-## Deployment (Ubuntu + Tailscale)
+## Deployment mit Tailscale
 
 ```sh
 git clone … && cd NEUGIER
 cp .env.example .env && nano .env
 docker compose up -d --build
-sudo tailscale serve --bg 8080
 ```
 
-Die App ist dann unter `https://<host>.<tailnet>.ts.net` erreichbar. Der Container bindet nur an `127.0.0.1`.
+Mit einem Tailscale-Auth-Key in `.env` registriert der Sidecar `neugier` und richtet Tailscale Serve automatisch ein. Die App ist dann unter `https://neugier.<tailnet>.ts.net` innerhalb des Tailnets erreichbar; lokal bleibt `http://localhost:8080` verfügbar. Einrichtung, Google OAuth und Host-Umzug: [docs/ENTWICKLER.md](docs/ENTWICKLER.md#tailscale-und-feste-https-adresse).
 Update: `git pull && docker compose up -d --build`. Backup: Ordner `data/` sichern (oder JSON-Export in der App).
 
 Admins können die vollständige SQLite-Datenbank auch unter **Admin → Datenbank-Backup** herunterladen und wiederherstellen. Hochgeladene Fotos und `.env` sind separat zu sichern; Hinweise zur Wiederherstellung stehen in der Entwickleranleitung.
@@ -43,6 +42,8 @@ Admins können die vollständige SQLite-Datenbank auch unter **Admin → Datenba
 
 | Variable | Zweck |
 |---|---|
+| `TS_AUTHKEY` | Tailscale-Auth-Key für die erstmalige Registrierung des Sidecars als `neugier` |
+| `TS_EXTRA_ARGS` | Optional zusätzliche Tailscale-Argumente, z. B. ein OAuth-Tag |
 | `GOOGLE_CLIENT_ID` | „Anmelden mit Google“. OAuth-Client (Webanwendung), autorisierte JS-Quelle = Tailscale-URL |
 | `ADMIN_EMAILS` | Kommagetrennt, werden automatisch Admin |
 | `GOOGLE_MAPS_API_KEY` | Maps JavaScript API (Browser) |
@@ -61,7 +62,8 @@ In der Google Cloud Console aktivieren: *Maps JavaScript API*, *Routes API*, *Pl
 * **Duschen getrennt vom Campen** geplant
 * **Live-Collab** (WebSocket) mit Präsenz, **Versionshistorie** mit Rollback (Batch oder einzelner Stopp)
 * **Rollen**: Zuschauer / Mitarbeiter / Admin, Admin-Dashboard
-* **Kommentare** an Tagen und Stopps, jederzeit bearbeitbar
+* **Kommentare** an Tagen und Stopps, von Mitarbeitern bearbeitbar; Zuschauer lesen nur
+* **Standort teilen**: Mitarbeiter können GPS freigeben; Zuschauer sehen die letzte aktuelle Position oder das geplante Tagesziel
 * **Ausgaben**: wer hat gezahlt + Preis, Aufteilung, Export für Splid
 * **Erinnerungen**: Text + Fotos, getrennt von der Planung
 * **KI-Assistent** mit kompletter Reise als Kontext; Vorschläge als Diff (Liste + Karte) zum Annehmen/Ablehnen/Ändern

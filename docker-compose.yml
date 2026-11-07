@@ -6,8 +6,31 @@ services:
     env_file:
       - path: .env
         required: false
+    environment:
+      TS_AUTHKEY: ""
+      TS_EXTRA_ARGS: ""
     ports:
-      # Nur lokal binden – von außen via `tailscale serve --bg 8080`
+      # Lokal direkt, im Tailnet über den Tailscale-Sidecar.
       - "127.0.0.1:8080:8080"
     volumes:
       - ./data:/data
+
+  tailscale:
+    image: tailscale/tailscale:stable
+    restart: unless-stopped
+    network_mode: service:neugier
+    depends_on:
+      neugier:
+        condition: service_started
+        restart: true
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY:-}
+      TS_AUTH_ONCE: "true"
+      TS_HOSTNAME: neugier
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: "true"
+      TS_SERVE_CONFIG: /config/serve.json
+      TS_EXTRA_ARGS: ${TS_EXTRA_ARGS:-}
+    volumes:
+      - ./tailscale-state:/var/lib/tailscale
+      - ./tailscale:/config:ro

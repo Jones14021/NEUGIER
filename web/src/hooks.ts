@@ -65,12 +65,13 @@ export function useOnline(): boolean {
 }
 
 /** Live-Standort des Geräts (nur solange `enabled`). */
-export function useGeoWatch(enabled: boolean): { pos: { lat: number; lng: number } | null; error: string } {
-  const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
+export function useGeoWatch(enabled: boolean): { pos: { lat: number; lng: number; timestamp: number } | null; error: string } {
+  const [pos, setPos] = useState<{ lat: number; lng: number; timestamp: number } | null>(null);
   const [error, setError] = useState('');
   useEffect(() => {
     if (!enabled) {
       setPos(null);
+      setError('');
       return;
     }
     if (!('geolocation' in navigator)) {
@@ -80,7 +81,7 @@ export function useGeoWatch(enabled: boolean): { pos: { lat: number; lng: number
     const id = navigator.geolocation.watchPosition(
       (p) => {
         setError('');
-        setPos({ lat: p.coords.latitude, lng: p.coords.longitude });
+        setPos({ lat: p.coords.latitude, lng: p.coords.longitude, timestamp: p.timestamp });
       },
       (e) => setError(e.message || 'Standort nicht verfügbar'),
       { enableHighAccuracy: false, maximumAge: 60000 },

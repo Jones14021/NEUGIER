@@ -103,7 +103,7 @@ export function Admin() {
 
       <div className="card">
         <h3>Nutzer</h3>
-        <p className="small muted">Zuschauer: lesen + kommentieren. Mitarbeiter: planen & bearbeiten. Admin: zusätzlich Nutzer & Einstellungen.</p>
+        <p className="small muted">Zuschauer: nur lesen. Mitarbeiter: planen & bearbeiten. Admin: zusätzlich Nutzer & Einstellungen.</p>
         {users.map((u) => (
           <div key={u.id} className="row user-row">
             {u.picture ? <img className="avatar" src={u.picture} alt="" /> : <span className="avatar ph">{u.name[0]}</span>}

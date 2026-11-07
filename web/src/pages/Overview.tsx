@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, ExternalLink, Navigation, Plus, Tent, Trash } f
 import type { Day, RouteLeg, Stop } from '@neugier/shared';
 import {
   dayCamp,
+  camperPosition,
   fmtDate,
   fmtHours,
   fmtKm,
@@ -11,14 +12,17 @@ import {
   insertDayOps,
   KIND_COLOR,
   moveDayOps,
+  plannedCamperStop,
   removeDayOps,
   routeLink,
   sortedDays,
   todayIso,
+  tripDate,
 } from '@neugier/shared';
 import { facilityBadges, FacilityIcons } from '../components/Facilities';
+import { api } from '../api';
 import { MapView, midpoint, type MapLabel, type MapMarker, type MapPath } from '../components/MapView';
-import { findToday, legsByDest, useGeoWatch, useRoute } from '../hooks';
+import { findToday, legsByDest, useRoute } from '../hooks';
 import { useTrip } from '../store';
 
 const PASSED = '#9aa9a0';
@@ -31,15 +35,22 @@ type Overnight = { day: Day; index: number; camp: Stop & { lat: number; lng: num
  * aus Google Maps, Camper-Symbol an der aktuellen Position, zurückliegende Route blasser.
  */
 export function Overview() {
-  const { state, presence, canPlan, apply } = useTrip();
+  const { state, presence, canPlan, apply, liveSharing, setLiveSharing, geo } = useTrip();
   const navigate = useNavigate();
   const days = useMemo(() => sortedDays(state.days), [state.days]);
   const today = findToday(days);
   const todayIdx = today ? days.indexOf(today) : -1;
   const [active, setActive] = useState<string | null>(today?.id ?? null);
-  const [live, setLive] = useState(() => localStorage.getItem('neugier.live') === '1');
-  const geo = useGeoWatch(live);
+  const [currentTripDate, setCurrentTripDate] = useState(() => tripDate(state.trip));
+  const [resolvedCamp, setResolvedCamp] = useState<{ key: string; lat: number; lng: number } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const refresh = () => setCurrentTripDate(tripDate(state.trip));
+    refresh();
+    const timer = setInterval(refresh, 10_000);
+    return () => clearInterval(timer);
+  }, [state.trip]);
 
   // Übernachtungsziele in Reihenfolge (Tage ohne Ziel/Koordinaten werden übersprungen)
   const overnights: Overnight[] = useMemo(
@@ -54,15 +65,21 @@ export function Overview() {
   const route = useRoute(routePts, state.trip.region);
   const legByDay = useMemo(() => legsByDest(routePts, route), [routePts, route]);
 
-  // Aktuelle Position: Live-Standort, sonst Übernachtungsort von gestern (bzw. Start)
-  const camper = useMemo(() => {
-    if (live && geo.pos) return { ...geo.pos, title: 'Live-Standort', live: true };
-    const t = todayIso();
-    if (t < (days[0]?.date ?? '')) return null;
-    const lastPassed = [...overnights].reverse().find((o) => o.day.date < t);
-    const at = lastPassed ?? overnights.find((o) => o.day.date === t);
-    return at ? { lat: at.camp.lat, lng: at.camp.lng, title: `Abgeleitet: ${at.camp.name}`, live: false } : null;
-  }, [live, geo.pos, overnights, days]);
+  const planned = useMemo(() => plannedCamperStop(state, currentTripDate), [state, currentTripDate]);
+  const position = useMemo(() => camperPosition(state, currentTripDate), [state, currentTripDate]);
+  const locationKey = planned ? JSON.stringify([state.trip.id, planned.id, planned.address, planned.name, state.trip.region]) : '';
+  useEffect(() => {
+    if (position || !planned || hasCoords(planned)) return;
+    let active = true;
+    const query = [planned.address || planned.name, state.trip.region].filter(Boolean).join(', ');
+    api<{ lat: number; lng: number }[]>(`/maps/search?${new URLSearchParams({ q: query })}`)
+      .then(([place]) => { if (active && place) setResolvedCamp({ key: locationKey, lat: place.lat, lng: place.lng }); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [position, planned, locationKey, state.trip.region]);
+  const camper = position ?? (planned && resolvedCamp?.key === locationKey
+    ? { lat: resolvedCamp.lat, lng: resolvedCamp.lng, title: `Geplant: ${planned.name}`, live: false }
+    : null);
 
   const paths: MapPath[] = useMemo(() => {
     const t = todayIso();
@@ -114,11 +131,6 @@ export function Overview() {
     listRef.current?.querySelector(`[data-day="${active}"]`)?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
   }, [active]);
 
-  const toggleLive = () => {
-    localStorage.setItem('neugier.live', live ? '0' : '1');
-    setLive(!live);
-  };
-
   const fullLink = routeLink(overnights.map((o) => o.camp), state.trip.region);
   const totalSec = route?.legs.reduce((a, l) => a + l.durationSec, 0) ?? 0;
   const totalM = route?.legs.reduce((a, l) => a + l.distanceMeters, 0) ?? 0;
@@ -141,9 +153,9 @@ export function Overview() {
               <Navigation size={16} /> Heute
             </button>
           )}
-          <button className={`chip${live ? ' primary' : ''}`} onClick={toggleLive} title="Camper-Position per GPS statt aus dem Reiseplan">
-            🚐 {live ? (geo.error ? 'GPS-Fehler' : geo.pos ? 'Live' : 'Suche GPS …') : 'Live-Standort'}
-          </button>
+          {canPlan && <button className={`chip${liveSharing ? ' primary' : ''}`} onClick={() => setLiveSharing(!liveSharing)} title="GPS-Standort mit der Reise teilen">
+            🚐 {liveSharing ? (geo.error ? 'GPS-Fehler' : geo.pos ? 'Live' : 'Suche GPS …') : 'Live-Standort'}
+          </button>}
           {fullLink && (
             <a className="chip" href={fullLink} target="_blank" rel="noreferrer">
               <ExternalLink size={16} /> Google Maps

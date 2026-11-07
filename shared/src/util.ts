@@ -1,4 +1,4 @@
-import type { Day, Stop, TripState } from './types';
+import type { Day, Stop, Trip, TripState } from './types';
 
 export function newId(): string {
   return globalThis.crypto.randomUUID();
@@ -74,4 +74,28 @@ function sameplace(a: Stop, b: Stop): boolean {
 
 export function hasCoords(s: Stop): s is Stop & { lat: number; lng: number } {
   return s.lat != null && s.lng != null;
+}
+
+export function tripDate(trip: Trip, instant: Date = new Date()): string {
+  const timeZone = trip.timeZone || (/neuseeland|new zealand/i.test(trip.region) ? 'Pacific/Auckland' : 'UTC');
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(instant);
+  } catch {
+    return instant.toISOString().slice(0, 10);
+  }
+}
+
+export function camperPosition(state: TripState, date: string): { lat: number; lng: number; title: string; live: boolean } | null {
+  const live = state.liveLocation;
+  if (live && Number.isFinite(Date.parse(live.capturedAt)) && tripDate(state.trip, new Date(live.capturedAt)) === date) {
+    return { lat: live.lat, lng: live.lng, title: 'Live-Standort', live: true };
+  }
+  const stop = plannedCamperStop(state, date);
+  return stop && hasCoords(stop) ? { lat: stop.lat, lng: stop.lng, title: `Geplant: ${stop.name}`, live: false } : null;
+}
+
+export function plannedCamperStop(state: TripState, date: string): Stop | undefined {
+  const day = state.days.find((item) => item.date === date);
+  if (!day) return undefined;
+  return dayCamp(state.stops, day.id) ?? dayStops(state.stops, day.id).filter((item) => item.scope === 'main').pop();
 }

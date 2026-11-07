@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
-import type { AnyEntity, Change, ChangeSource, EntityType, Op, Trip, TripState } from '@neugier/shared';
+import type { AnyEntity, Change, ChangeSource, EntityType, LiveLocation, Op, Trip, TripState } from '@neugier/shared';
 import { newId } from '@neugier/shared';
-import { db, tx } from './db';
+import { db, getSetting, setSetting, tx } from './db';
 
 export const ENTITY_TYPES: EntityType[] = ['trip', 'day', 'stop', 'expense', 'memory', 'comment'];
 
@@ -46,7 +46,17 @@ export function getState(tripId: string): TripState | null {
     else if (r.type === 'memory') state.memories!.push(d);
     else if (r.type === 'comment') state.comments!.push(d);
   }
+  const location = getSetting(`trip.location.${tripId}`);
+  state.liveLocation = location ? JSON.parse(location) as LiveLocation : null;
   return state.trip ? (state as TripState) : null;
+}
+
+export function updateLiveLocation(tripId: string, location: LiveLocation): boolean {
+  const current = getSetting(`trip.location.${tripId}`);
+  if (current && (JSON.parse(current) as LiveLocation).capturedAt >= location.capturedAt) return false;
+  setSetting(`trip.location.${tripId}`, JSON.stringify(location));
+  events.emit('location', { tripId, location });
+  return true;
 }
 
 /**

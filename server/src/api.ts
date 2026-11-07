@@ -14,7 +14,7 @@ import { parseExcel } from './importers/excel';
 import { chat, llmSettings } from './llm';
 import { computeRoute, geocodeMissing, searchPlaces } from './maps';
 import { buildMergeOps, fromExport, planMerge, type Resolution } from './merge';
-import { applyOps, events, getState, listChanges, listTrips, restoreVersion, rollbackBatch } from './store';
+import { applyOps, events, getState, listChanges, listTrips, restoreVersion, rollbackBatch, updateLiveLocation } from './store';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 30 * 1024 * 1024 } });
 const backupUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
@@ -56,6 +56,7 @@ export function viewerState(s: TripState): TripState {
   const visible = new Set([...days.map((d) => d.id)]);
   return {
     trip: { ...s.trip, notes: '', members: [] },
+    liveLocation: s.liveLocation,
     days,
     stops,
     expenses: [],
@@ -186,6 +187,19 @@ export function api(): express.Router {
   );
   r.get('/trips/:tripId', requireRole('viewer'), h((req, res) => res.json(stateFor(req))));
 
+  r.post('/trips/:tripId/location', requireRole('editor'), h((req, res) => {
+    const s = state(req);
+    const { lat, lng, timestamp } = (req.body ?? {}) as { lat: unknown; lng: unknown; timestamp: unknown };
+    const now = Date.now();
+    if (typeof lat !== 'number' || !Number.isFinite(lat) || lat < -90 || lat > 90 ||
+        typeof lng !== 'number' || !Number.isFinite(lng) || lng < -180 || lng > 180 ||
+        typeof timestamp !== 'number' || !Number.isFinite(timestamp) || timestamp < now - 120_000 || timestamp > now + 60_000) {
+      return res.status(400).json({ error: 'Ungültiger oder veralteter Standort' });
+    }
+    const location = { lat, lng, capturedAt: new Date(timestamp).toISOString() };
+    res.json({ updated: updateLiveLocation(s.trip.id, location) });
+  }));
+
   r.post(
     '/trips/:tripId/ops',
     requireRole('editor'),
@@ -204,10 +218,9 @@ export function api(): express.Router {
     }),
   );
 
-  // Kommentare dürfen auch Zuschauer schreiben und immer bearbeiten
   r.post(
     '/trips/:tripId/comments',
-    requireRole('viewer'),
+    requireRole('editor'),
     h((req, res) => {
       const s = state(req);
       const { id, targetId, text } = req.body as { id?: string; targetId: string; text: string };

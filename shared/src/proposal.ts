@@ -79,6 +79,7 @@ export function proposalToOps(state: TripState, changes: ProposedChange[]): Op[]
 export function applyOpsLocal(state: TripState, ops: Op[]): TripState {
   const next: TripState = {
     trip: state.trip,
+    liveLocation: state.liveLocation,
     days: [...state.days],
     stops: [...state.stops],
     expenses: [...state.expenses],

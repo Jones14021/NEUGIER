@@ -23,6 +23,7 @@ export interface Trip extends BaseEntity {
   name: string;
   /** Wird an Ortsnamen ohne Koordinaten angehängt (Google-Maps-Links, Suche). */
   region: string;
+  timeZone?: string;
   startDate: string;
   endDate: string;
   currency: string;
@@ -161,11 +162,18 @@ export interface Change {
 
 export interface TripState {
   trip: Trip;
+  liveLocation?: LiveLocation | null;
   days: Day[];
   stops: Stop[];
   expenses: Expense[];
   memories: Memory[];
   comments: Comment[];
+}
+
+export interface LiveLocation {
+  lat: number;
+  lng: number;
+  capturedAt: string;
 }
 
 export interface TripExport {
