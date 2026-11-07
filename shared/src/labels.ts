@@ -65,9 +65,20 @@ export const SHOWER_LABEL: Record<ShowerStatus, string> = {
   unklar: 'Dusche unklar',
 };
 
+export const FACILITY_LABEL = {
+  power: { ja: 'Strom', nein: 'Kein Strom', unklar: 'Strom?' },
+  water: { ja: 'Frischwasser', nein: 'Kein Frischwasser', unklar: 'Frischwasser?' },
+  dump: { ja: 'Dump-Station', nein: 'Keine Dump-Station', unklar: 'Dump-Station?' },
+} as const;
+
+/** Zuschauer sehen nur Reise-Übersicht und Erinnerungen. */
+export function canSeePlanning(role: Role): boolean {
+  return role === 'editor' || role === 'admin';
+}
+
 export const ROLE_LABEL: Record<Role, string> = {
   pending: 'Wartet auf Freigabe',
-  viewer: 'Zuschauer',
+  viewer: 'Zuschauer (Reise + Erinnerungen)',
   editor: 'Mitarbeiter',
   admin: 'Admin',
 };

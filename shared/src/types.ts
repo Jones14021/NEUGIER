@@ -32,15 +32,27 @@ export interface Trip extends BaseEntity {
 }
 
 export type ShowerStatus = 'ja' | 'nein' | 'unklar';
+export type Availability = ShowerStatus;
+
+export interface Facilities {
+  power: Availability;
+  water: Availability;
+  /** Dump-Station für Schwarzwasser. */
+  dump: Availability;
+}
 
 export interface Day extends BaseEntity {
   date: string; // YYYY-MM-DD
   title: string;
   /** Feste Termine, z. B. "Feiertag" oder "Abflug 12:20". */
   times: string;
+  /** Markdown-light (fett, kursiv, Listen, Links). */
   notes: string;
   /** Duschen wird getrennt vom Campen geplant. */
   shower: { status: ShowerStatus; note: string };
+  facilities?: Facilities;
+  /** URL des Titelbilds (Upload oder aus Erinnerungen). */
+  cover?: string;
 }
 
 export type StopKind =
@@ -76,7 +88,9 @@ export interface Stop extends BaseEntity {
   duration: string;
   links: string[];
   booking: '' | 'offen' | 'gebucht';
-  camp?: { type: CampType; powered: boolean; shower: boolean };
+  camp?: { type: CampType; powered?: boolean; shower?: boolean };
+  /** Server konnte keine Koordinaten zum Namen/zur Adresse finden. */
+  geoFailed?: boolean;
 }
 
 export interface Expense extends BaseEntity {
@@ -172,18 +186,22 @@ export interface AppConfig {
   mapsApiKey: string;
   mapId: string;
   llmConfigured: boolean;
+  webSearch: boolean;
 }
 
 export interface RouteLeg {
+  /** 0 = keine Straßenroute gefunden (Luftlinie). */
   distanceMeters: number;
   durationSec: number;
+  path?: { lat: number; lng: number }[];
 }
 
 export interface RouteResult {
   /** Dekodierte Punkte der Route. */
   path: { lat: number; lng: number }[];
+  /** Eine Etappe pro aufeinanderfolgendem Punktepaar. */
   legs: RouteLeg[];
-  /** true = Luftlinie (kein API-Key oder Fehler). */
+  /** true = mindestens eine Etappe nur als Luftlinie (kein API-Key oder keine Route). */
   fallback: boolean;
 }
 
@@ -206,6 +224,13 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   proposal?: ProposedChange[];
+  sources?: { title: string; url: string }[];
+}
+
+export interface ChatResponse {
+  content: string;
+  proposal: ProposedChange[];
+  sources: { title: string; url: string }[];
 }
 
 export interface PlaceResult {

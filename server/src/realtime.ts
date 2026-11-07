@@ -1,14 +1,17 @@
 import type { Server } from 'node:http';
 import { WebSocketServer, type WebSocket } from 'ws';
-import type { Change } from '@neugier/shared';
+import type { Change, Role, TripState } from '@neugier/shared';
+import { canSeePlanning } from '@neugier/shared';
+import { viewerState } from './api';
 import { userFromCookieHeader } from './auth';
-import { events } from './store';
+import { events, getState } from './store';
 
 interface Client {
   ws: WebSocket;
   tripId: string | null;
   name: string;
   userId: string;
+  role: Role;
   dayId: string | null;
 }
 
@@ -30,7 +33,7 @@ export function attachRealtime(server: Server): void {
   wss.on('connection', (ws, req) => {
     const user = userFromCookieHeader(req.headers.cookie);
     if (!user || user.role === 'pending') {
-      ws.close(4401, 'unauthorized');
+      ws.close(4401, 'unauthorized');role: user.role, 
       return;
     }
     const client: Client = { ws, tripId: null, name: user.name, userId: user.id, dayId: null };
@@ -56,7 +59,19 @@ export function attachRealtime(server: Server): void {
   });
 
   events.on('change', ({ tripId, changes }: { tripId: string; changes: Change[] }) => {
-    for (const c of clients) if (c.tripId === tripId) send(c.ws, { type: 'changes', changes });
+    let viewerSnapshot: TripState | null | undefined;
+    for (const c of clients) {
+      if (c.tripId !== tripId) continue;
+      if (canSeePlanning(c.role)) send(c.ws, { type: 'changes', changes });
+      else {
+        // Zuschauer bekommen statt Einzeländerungen den gefilterten Gesamtstand
+        viewerSnapshot ??= (() => {
+          const s = getState(tripId);
+          return s ? viewerState(s) : null;
+        })();
+        if (viewerSnapshot) send(c.ws, { type: 'state', state: viewerSnapshot });
+      }
+    }
   });
 
   // Keep-alive (Tailscale/Proxies schließen sonst inaktive Verbindungen)

@@ -18,7 +18,10 @@ export const config = {
     baseUrl: env.LLM_BASE_URL || 'https://models.github.ai/inference',
     model: env.LLM_MODEL || 'openai/gpt-4.1',
     apiKey: env.LLM_API_KEY || '',
+    /** off | tavily | native */
+    webSearch: env.LLM_WEB_SEARCH || 'off',
   },
+  tavilyApiKey: env.TAVILY_API_KEY || '',
   webDist: path.resolve(import.meta.dirname, '../../web/dist'),
 };
 

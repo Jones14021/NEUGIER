@@ -1,15 +1,15 @@
 import path from 'node:path';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import multer from 'multer';
-import type { AnyEntity, ChatMessage, Op, Role, Trip, TripExport, TypedEntity } from '@neugier/shared';
-import { newId } from '@neugier/shared';
+import type { AnyEntity, ChatMessage, Op, Role, Trip, TripExport, TripState, TypedEntity } from '@neugier/shared';
+import { canSeePlanning, newId } from '@neugier/shared';
 import { attachUser, deleteUser, listUsers, loginDev, loginGoogle, logout, requireRole, setRole } from './auth';
 import { config, uploadsDir } from './config';
 import { setSetting } from './db';
 import { toJson, toSplidCsv, toSplidText } from './exporters';
 import { parseExcel } from './importers/excel';
 import { chat, llmSettings } from './llm';
-import { computeRoute, searchPlaces } from './maps';
+import { computeRoute, geocodeMissing, searchPlaces } from './maps';
 import { buildMergeOps, fromExport, planMerge, type Resolution } from './merge';
 import { applyOps, getState, listChanges, listTrips, restoreVersion, rollbackBatch } from './store';
 
@@ -43,6 +43,28 @@ function state(req: Request) {
   return s;
 }
 
+/** Zuschauer: nur Reiseübersicht (Hauptroute, ohne Notizen/Ausgaben/Tagesplanung) + Erinnerungen. */
+export function viewerState(s: TripState): TripState {
+  const days = s.days.map((d) => ({ ...d, notes: '', times: '', shower: { ...d.shower, note: '' } }));
+  const stops = s.stops
+    .filter((x) => x.dayId && x.scope === 'main')
+    .map((x) => ({ ...x, notes: '', links: [], booking: '' as const, time: '', duration: '' }));
+  const visible = new Set([...days.map((d) => d.id)]);
+  return {
+    trip: { ...s.trip, notes: '', members: [] },
+    days,
+    stops,
+    expenses: [],
+    memories: s.memories,
+    comments: s.comments.filter((c) => visible.has(c.targetId) || s.memories.some((m) => m.id === c.targetId)),
+  };
+}
+
+function stateFor(req: Request) {
+  const s = state(req);
+  return canSeePlanning(req.user!.role) ? s : viewerState(s);
+}
+
 /** Ausstehende Imports (Datei geparst, wartet auf Konfliktlösung). */
 const pendingImports = new Map<string, { tripId: string; source: string; entities: TypedEntity[] }>();
 
@@ -58,6 +80,7 @@ export function api(): express.Router {
       mapsApiKey: config.mapsApiKey,
       mapId: config.mapId,
       llmConfigured: !!llmSettings().apiKey,
+      webSearch: llmSettings().webSearch,
     });
   });
 
@@ -82,13 +105,21 @@ export function api(): express.Router {
   });
   r.get('/admin/settings', requireRole('admin'), (_req, res) => {
     const s = llmSettings();
-    res.json({ llmBaseUrl: s.baseUrl, llmModel: s.model, llmApiKeySet: !!s.apiKey });
+    res.json({
+      llmBaseUrl: s.baseUrl,
+      llmModel: s.model,
+      llmApiKeySet: !!s.apiKey,
+      webSearch: s.webSearchMode,
+      searchApiKeySet: !!s.searchApiKey,
+    });
   });
   r.put('/admin/settings', requireRole('admin'), (req, res) => {
-    const { llmBaseUrl, llmModel, llmApiKey } = req.body as Record<string, string | undefined>;
-    if (llmBaseUrl !== undefined) setSetting('llm.baseUrl', llmBaseUrl);
-    if (llmModel !== undefined) setSetting('llm.model', llmModel);
-    if (llmApiKey) setSetting('llm.apiKey', llmApiKey);
+    const { llmBaseUrl, llmModel, llmApiKey, webSearch, searchApiKey } = req.body as Record<string, string | boolean | undefined>;
+    if (typeof llmBaseUrl === 'string') setSetting('llm.baseUrl', llmBaseUrl);
+    if (typeof llmModel === 'string') setSetting('llm.model', llmModel);
+    if (typeof llmApiKey === 'string' && llmApiKey) setSetting('llm.apiKey', llmApiKey);
+    if (typeof webSearch === 'string') setSetting('llm.webSearch', webSearch);
+    if (typeof searchApiKey === 'string' && searchApiKey) setSetting('search.apiKey', searchApiKey);
     res.json({ ok: true });
   });
 
@@ -116,7 +147,7 @@ export function api(): express.Router {
       res.json(trip);
     }),
   );
-  r.get('/trips/:tripId', requireRole('viewer'), h((req, res) => res.json(state(req))));
+  r.get('/trips/:tripId', requireRole('viewer'), h((req, res) => res.json(stateFor(req))));
 
   r.post(
     '/trips/:tripId/ops',
@@ -129,6 +160,9 @@ export function api(): express.Router {
         source: req.body.source === 'ai' ? 'ai' : 'user',
         label: String(req.body.label || 'Änderung'),
       });
+      if (changes.some((c) => c.type === 'stop' && c.after && (c.after as { lat?: number }).lat == null)) {
+        void geocodeMissing(s.trip.id);
+      }
       res.json({ changes });
     }),
   );
@@ -154,7 +188,7 @@ export function api(): express.Router {
   // --- Versionshistorie ---
   r.get(
     '/trips/:tripId/history',
-    requireRole('viewer'),
+    requireRole('editor'),
     h((req, res) => {
       res.json(listChanges(String(req.params.tripId), { entityId: req.query.entityId as string | undefined }));
     }),
@@ -174,7 +208,7 @@ export function api(): express.Router {
   // --- Export ---
   r.get(
     '/trips/:tripId/export.json',
-    requireRole('viewer'),
+    requireRole('editor'),
     h((req, res) => {
       const s = state(req);
       res.attachment(`${s.trip.name}.neugier.json`).json(toJson(s));
@@ -182,7 +216,7 @@ export function api(): express.Router {
   );
   r.get(
     '/trips/:tripId/export/splid.csv',
-    requireRole('viewer'),
+    requireRole('editor'),
     h((req, res) => {
       const s = state(req);
       res.attachment(`${s.trip.name}-ausgaben-splid.csv`).type('text/csv').send(toSplidCsv(s));
@@ -190,7 +224,7 @@ export function api(): express.Router {
   );
   r.get(
     '/trips/:tripId/export/splid.txt',
-    requireRole('viewer'),
+    requireRole('editor'),
     h((req, res) => res.type('text/plain').send(toSplidText(state(req)))),
   );
 
@@ -241,6 +275,7 @@ export function api(): express.Router {
         label: `Import (${pending.source === 'excel' ? 'Excel' : 'JSON'})`,
       });
       pendingImports.delete(String(req.body.importId));
+      void geocodeMissing(s.trip.id);
       res.json({ changes: changes.length });
     }),
   );
@@ -270,9 +305,11 @@ export function api(): express.Router {
   // --- KI-Assistent ---
   r.post(
     '/trips/:tripId/chat',
-    requireRole('viewer'),
+    requireRole('editor'),
     h(async (req, res) => {
-      res.json(await chat(state(req), req.body.messages as ChatMessage[], req.body.dayId));
+      // Spielplatz schickt einen eigenen (nicht gespeicherten) Stand mit
+      const s = req.body.state ? { ...(req.body.state as TripState), trip: state(req).trip } : state(req);
+      res.json(await chat(s, req.body.messages as ChatMessage[], req.body.dayId, req.body.mode));
     }),
   );
 

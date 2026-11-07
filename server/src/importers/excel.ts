@@ -66,6 +66,11 @@ export async function parseExcel(buf: Buffer, opts: { startDate?: string; curren
         .join(' · '),
       notes: list.filter((r) => r.details).map((r) => r.details).join('\n\n'),
       shower: { status: showerStatus(showerRow?.shower), note: showerRow?.shower ?? '' },
+      facilities: {
+        power: /powered/i.test(showerRow?.shower ?? '') ? 'ja' : 'unklar',
+        water: 'unklar',
+        dump: 'unklar',
+      },
     };
     out.push({ type: 'day', data: day });
 
@@ -87,11 +92,7 @@ export async function parseExcel(buf: Buffer, opts: { startDate?: string; curren
       if (r.camp) {
         const [name, ...rest] = r.camp.split('\n');
         const s = stop(`xl:camp:${date}`, dayKey, 100 + order++, 'campsite', name, rest.join('\n').trim(), '');
-        s.camp = {
-          type: campType(r.camp),
-          powered: /powered/i.test(r.shower),
-          shower: showerStatus(r.shower) === 'ja',
-        };
+        s.camp = { type: campType(r.camp) };
         s.booking = /gebucht/i.test(r.camp) ? 'gebucht' : /buchen/i.test(r.camp + r.details) ? 'offen' : '';
         const links = [r.detailsLink].filter(Boolean) as string[];
         if (links.length) s.links = links;

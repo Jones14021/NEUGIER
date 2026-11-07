@@ -1,7 +1,8 @@
 import crypto from 'node:crypto';
-import type { PlaceResult, RouteResult, Stop } from '@neugier/shared';
+import type { PlaceResult, RouteLeg, RouteResult, Stop } from '@neugier/shared';
 import { config } from './config';
 import { db } from './db';
+import { applyOps, getState } from './store';
 
 type Pt = Pick<Stop, 'name' | 'lat' | 'lng' | 'placeId' | 'address'>;
 
@@ -11,51 +12,100 @@ function waypoint(p: Pt, region: string) {
   return { address: [p.address || p.name, region].filter(Boolean).join(', ') };
 }
 
-/** Routenberechnung über die Google Routes API (mit Cache). Fallback: Luftlinie. */
-export async function computeRoute(points: Pt[], region: string): Promise<RouteResult> {
-  const straight = (): RouteResult => {
-    const path = points.filter((p) => p.lat != null).map((p) => ({ lat: p.lat!, lng: p.lng! }));
-    return { path, legs: [], fallback: true };
-  };
-  if (points.length < 2 || !config.mapsServerKey) return straight();
+function coords(p: Pt): { lat: number; lng: number }[] {
+  return p.lat != null && p.lng != null ? [{ lat: p.lat, lng: p.lng }] : [];
+}
 
-  const hash = crypto.createHash('sha1').update(JSON.stringify(points.map((p) => waypoint(p, region)))).digest('hex');
+/** Eine Etappe A→B über die Google Routes API (gecacht). null = keine Straßenroute (z. B. Flug). */
+async function computeLeg(a: Pt, b: Pt, region: string): Promise<RouteLeg | null> {
+  const wa = waypoint(a, region);
+  const wb = waypoint(b, region);
+  const hash = crypto.createHash('sha1').update(JSON.stringify(['leg', wa, wb])).digest('hex');
   const cached = db.prepare('SELECT data FROM route_cache WHERE hash = ?').get(hash) as { data: string } | undefined;
   if (cached) return JSON.parse(cached.data);
 
-  const wps = points.map((p) => waypoint(p, region));
-  const body = {
-    origin: wps[0],
-    destination: wps[wps.length - 1],
-    intermediates: wps.slice(1, -1).slice(0, 25),
-    travelMode: 'DRIVE',
-    languageCode: 'de',
-  };
   const r = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'X-Goog-Api-Key': config.mapsServerKey,
-      'X-Goog-FieldMask': 'routes.polyline.encodedPolyline,routes.legs.distanceMeters,routes.legs.duration',
+      'X-Goog-FieldMask': 'routes.polyline.encodedPolyline,routes.distanceMeters,routes.duration',
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ origin: wa, destination: wb, travelMode: 'DRIVE', languageCode: 'de' }),
   });
   if (!r.ok) {
-    console.warn('Routes API', r.status, await r.text());
-    return straight();
+    console.warn('Routes API', r.status, (await r.text()).slice(0, 200));
+    return null;
   }
   const data = (await r.json()) as {
-    routes?: { polyline: { encodedPolyline: string }; legs: { distanceMeters?: number; duration?: string }[] }[];
+    routes?: { polyline: { encodedPolyline: string }; distanceMeters?: number; duration?: string }[];
   };
   const route = data.routes?.[0];
-  if (!route) return straight();
-  const result: RouteResult = {
-    path: decodePolyline(route.polyline.encodedPolyline),
-    legs: route.legs.map((l) => ({ distanceMeters: l.distanceMeters ?? 0, durationSec: parseInt(l.duration ?? '0') })),
-    fallback: false,
-  };
-  db.prepare('INSERT OR REPLACE INTO route_cache (hash, data) VALUES (?, ?)').run(hash, JSON.stringify(result));
-  return result;
+  const leg: RouteLeg | null = route
+    ? { distanceMeters: route.distanceMeters ?? 0, durationSec: parseInt(route.duration ?? '0'), path: decodePolyline(route.polyline.encodedPolyline) }
+    : null;
+  // Auch "keine Route" cachen, damit z. B. Flugetappen nicht immer wieder angefragt werden
+  db.prepare('INSERT OR REPLACE INTO route_cache (hash, data) VALUES (?, ?)').run(hash, JSON.stringify(leg));
+  return leg;
+}
+
+/**
+ * Route über alle Punkte, etappenweise berechnet. Etappen ohne Straßenroute werden als Luftlinie
+ * (durationSec = 0, distanceMeters = 0) geliefert; `fallback` = mindestens eine Etappe ohne echte Route.
+ */
+export async function computeRoute(points: Pt[], region: string): Promise<RouteResult> {
+  if (points.length < 2) return { path: points.flatMap(coords), legs: [], fallback: true };
+  const pairs = points.slice(1).map((b, i) => [points[i], b] as const);
+  const legs: RouteLeg[] = [];
+  let fallback = !config.mapsServerKey;
+  // Begrenzte Parallelität, um API-Limits zu schonen
+  for (let i = 0; i < pairs.length; i += 6) {
+    const chunk = await Promise.all(
+      pairs.slice(i, i + 6).map(async ([a, b]) => (config.mapsServerKey ? computeLeg(a, b, region).catch(() => null) : null)),
+    );
+    chunk.forEach((leg, j) => {
+      const [a, b] = pairs[i + j];
+      if (!leg) fallback = true;
+      legs.push(leg ?? { distanceMeters: 0, durationSec: 0, path: [...coords(a), ...coords(b)] });
+    });
+  }
+  return { path: legs.flatMap((l) => l.path ?? []), legs, fallback };
+}
+
+const geoRunning = new Set<string>();
+const geoAgain = new Set<string>();
+
+/**
+ * Ergänzt Koordinaten für Stopps ohne lat/lng (z. B. nach Adressänderung oder Import).
+ * Läuft im Hintergrund; Ergebnis kommt per Live-Update bei allen Clients an.
+ */
+export async function geocodeMissing(tripId: string): Promise<void> {
+  if (!config.mapsServerKey) return;
+  if (geoRunning.has(tripId)) {
+    geoAgain.add(tripId);
+    return;
+  }
+  geoRunning.add(tripId);
+  try {
+    const state = getState(tripId);
+    if (!state) return;
+    for (const s of state.stops.filter((x) => x.lat == null && !x.geoFailed && (x.address || x.name))) {
+      const q = [s.address || s.name, state.trip.region].filter(Boolean).join(', ');
+      const hit = (await searchPlaces(q).catch(() => []))[0];
+      const patch = hit
+        ? { lat: hit.lat, lng: hit.lng, placeId: hit.placeId, address: s.address || hit.address, geoFailed: false }
+        : { geoFailed: true };
+      applyOps(tripId, [{ op: 'update', type: 'stop', id: s.id, patch }], {
+        userName: 'Google Maps',
+        userId: '',
+        source: 'user',
+        label: hit ? `Koordinaten ergänzt: ${s.name}` : `Ort nicht gefunden: ${s.name}`,
+      });
+    }
+  } finally {
+    geoRunning.delete(tripId);
+    if (geoAgain.delete(tripId)) void geocodeMissing(tripId);
+  }
 }
 
 /** Ortssuche über Places API (New) – Text Search. */
