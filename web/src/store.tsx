@@ -12,7 +12,8 @@ interface Presence {
 interface Ctx {
   config: AppConfig;
   user: User;
-  trips: Trip[];
+  /** null = noch nicht geladen. */
+  trips: Trip[] | null;
   state: TripState | null;
   presence: Presence[];
   canEdit: boolean;
@@ -43,7 +44,7 @@ export function useTrip(): Ctx & { state: TripState } {
 const TRIP_KEY = 'neugier.trip';
 
 export function StoreProvider({ config, user, children }: { config: AppConfig; user: User; children: ReactNode }) {
-  const [trips, setTrips] = useState<Trip[]>([]);
+  const [trips, setTrips] = useState<Trip[] | null>(null);
   const [tripId, setTripId] = useState<string | null>(localStorage.getItem(TRIP_KEY));
   const [state, setState] = useState<TripState | null>(null);
   const [presence, setPresence] = useState<Presence[]>([]);

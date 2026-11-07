@@ -22,7 +22,7 @@ export function App({ onLogout }: { onLogout: () => void }) {
     return (
       <div className="center">
         <div className="card narrow">
-          {trips.length === 0 ? <p>Noch keine Reise vorhanden.</p> : <p className="muted">Lädt …</p>}
+          {trips?.length === 0 ? <p>Noch keine Reise vorhanden.</p> : <p className="muted">Lädt …</p>}
           <button className="btn" onClick={() => api('/auth/logout', { method: 'POST' }).then(onLogout)}>
             Abmelden
           </button>

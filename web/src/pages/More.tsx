@@ -32,11 +32,11 @@ export function More({ onLogout }: { onLogout: () => void }) {
         {presence.length > 0 && <p className="small muted">Gerade online: {[...new Set(presence.map((p) => p.name))].join(', ')}</p>}
       </div>
 
-      {trips.length > 1 && (
+      {trips && trips.length > 1 && (
         <div className="card">
           <h3>Reise wählen</h3>
           <select value={state.trip.id} onChange={(e) => selectTrip(e.target.value)}>
-            {trips.map((t) => (
+            {trips?.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
               </option>
