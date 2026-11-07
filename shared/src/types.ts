@@ -187,6 +187,27 @@ export interface RouteResult {
   fallback: boolean;
 }
 
+/** Vom KI-Assistenten vorgeschlagene Änderung (wird im Diff angezeigt, nicht direkt angewendet). */
+export type ProposedChange =
+  | {
+      action: 'add';
+      /** Datum des Tages (YYYY-MM-DD) oder null für Ideen-Pool. */
+      date: string | null;
+      /** Einfügen nach diesem Stopp (null = am Anfang). */
+      afterStopId: string | null;
+      stop: Pick<Stop, 'name' | 'kind' | 'scope' | 'notes'> & Partial<Pick<Stop, 'lat' | 'lng' | 'placeId' | 'address' | 'time' | 'duration'>>;
+      reason: string;
+    }
+  | { action: 'update'; stopId: string; patch: Partial<Pick<Stop, 'name' | 'kind' | 'scope' | 'notes' | 'time' | 'duration'>>; reason: string }
+  | { action: 'move'; stopId: string; date: string | null; afterStopId: string | null; reason: string }
+  | { action: 'remove'; stopId: string; reason: string };
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  proposal?: ProposedChange[];
+}
+
 export interface PlaceResult {
   placeId: string;
   name: string;
