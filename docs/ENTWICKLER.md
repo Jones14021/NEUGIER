@@ -64,10 +64,12 @@ Das Archiv enthält private Schlüssel und Reisedaten; es ist **nicht verschlüs
 
 1. In der [Google Cloud Console](https://console.cloud.google.com/) ein Projekt und gegebenenfalls ein Abrechnungskonto einrichten.
 2. Unter [APIs und Dienste](https://console.cloud.google.com/apis/library) die Maps JavaScript API, Routes API und Places API (New) aktivieren. Im Bereich [Zugangsdaten](https://console.cloud.google.com/apis/credentials) API-Keys erstellen.
-3. `GOOGLE_MAPS_API_KEY` für die Maps JavaScript API auf die verwendeten HTTP-Referrer und APIs beschränken. Für `GOOGLE_MAPS_SERVER_KEY` einen separaten, auf Routes und Places beschränkten Server-Key verwenden. Optional eine `GOOGLE_MAPS_MAP_ID` setzen.
+3. `GOOGLE_MAPS_API_KEY` für die Maps JavaScript API auf die verwendeten HTTP-Referrer und APIs beschränken. Für `GOOGLE_MAPS_SERVER_KEY` einen separaten Key mit API-Einschränkungen auf Routes API und Places API (New) verwenden. **Diesen Server-Key nicht auf Websites/HTTP-Referrer beschränken:** Die Anfragen kommen vom Server und haben keinen Browser-Referrer. Für einen unabhängig von der ausgehenden IP betreibbaren Server bei Anwendungseinschränkungen **Keine** wählen. Dieser Key kann bei einem Leak von anderen verwendet werden: geheim halten, API-Quotas und Abrechnungswarnungen einrichten und bei Verdacht sofort rotieren. Optional eine `GOOGLE_MAPS_MAP_ID` setzen.
 4. Für Google-Login einen OAuth-Client vom Typ Webanwendung erstellen und die tatsächlichen Origins, zum Beispiel `http://localhost:8080` und die Tailscale-URL, als autorisierte JavaScript-Quellen eintragen. Die Client-ID in `GOOGLE_CLIENT_ID` setzen und gegebenenfalls `ADMIN_EMAILS` konfigurieren.
 
 Ohne `GOOGLE_CLIENT_ID` ist der ungeschützte Dev-Login aktiv. Nicht öffentlich betreiben; für den Zugriff über Tailscale Google-Login und geeignete Zugriffskontrollen konfigurieren. Maps- und API-Aufrufe können Kosten verursachen; Quotas und Abrechnung beim Anbieter prüfen.
+
+Wenn Google `API_KEY_HTTP_REFERRER_BLOCKED` oder `Requests from referer <empty> are blocked` für Places oder Routes meldet, ist der Server-Key fälschlich mit einer Website-Einschränkung versehen. Die Anwendungseinschränkung korrigieren, eine eventuelle Google-Übernahmezeit abwarten und NEUGIER neu starten. Fehlende Stopp-Koordinaten werden beim Start mit Places nachgeschlagen; Ergebnisse können ungenau sein und sollten geprüft werden.
 
 ## KI-Assistent mit Websuche
 

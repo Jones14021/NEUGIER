@@ -1,9 +1,17 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { AdvancedMarker, APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { AdvancedMarker, APILoadingStatus, APIProvider, Map, useApiLoadingStatus, useMap } from '@vis.gl/react-google-maps';
 import { LocateFixed } from 'lucide-react';
 import { useStore } from '../store';
 
 type LatLng = { lat: number; lng: number };
+
+declare global {
+  interface Window {
+    gm_authFailure?: () => void;
+  }
+}
+
+const MapAuthFailure = createContext(false);
 
 export interface MapMarker {
   id: string;
@@ -54,10 +62,23 @@ interface Props {
 
 export function MapProvider({ children }: { children: ReactNode }) {
   const { config } = useStore();
+  const [authFailed, setAuthFailed] = useState(false);
+  useLayoutEffect(() => {
+    if (!config.mapsApiKey) return;
+    const previous = window.gm_authFailure;
+    const handler = () => {
+      previous?.();
+      setAuthFailed(true);
+    };
+    window.gm_authFailure = handler;
+    return () => {
+      if (window.gm_authFailure === handler) window.gm_authFailure = previous;
+    };
+  }, [config.mapsApiKey]);
   if (!config.mapsApiKey) return <>{children}</>;
   return (
     <APIProvider apiKey={config.mapsApiKey} language="de" region="DE">
-      {children}
+      <MapAuthFailure.Provider value={authFailed}>{children}</MapAuthFailure.Provider>
     </APIProvider>
   );
 }
@@ -65,6 +86,16 @@ export function MapProvider({ children }: { children: ReactNode }) {
 export function MapView(props: Props) {
   const { config } = useStore();
   if (!config.mapsApiKey) return <NoKeyMap {...props} />;
+  return <GoogleMapView {...props} />;
+}
+
+function GoogleMapView(props: Props) {
+  const { config } = useStore();
+  const status = useApiLoadingStatus();
+  const authFailed = useContext(MapAuthFailure);
+  if (authFailed || status === APILoadingStatus.AUTH_FAILURE || status === APILoadingStatus.FAILED) {
+    return <NoKeyMap {...props} error="Google Maps konnte nicht geladen werden. Browser-Key, erlaubte Website und Abrechnung prüfen." />;
+  }
   return (
     <div className="map">
       <Map
@@ -193,14 +224,14 @@ function MyLocation() {
 }
 
 /** Ersatzdarstellung ohne API-Key: einfache Projektion der Punkte (Drag ändert Koordinaten ebenfalls). */
-function NoKeyMap({ markers, paths, labels, camper, onMarkerClick, onMarkerDrag, children }: Props) {
+function NoKeyMap({ markers, paths, labels, camper, onMarkerClick, onMarkerDrag, children, error }: Props & { error?: string }) {
   const box = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<{ id: string; x: number; y: number } | null>(null);
   const pts = [...markers, ...paths.flatMap((p) => p.path), ...(camper ? [camper] : [])];
   if (!pts.length) {
     return (
       <div className="map nokey">
-        <p className="muted small">Keine Koordinaten · Google Maps API-Key fehlt (.env)</p>
+        <p className="muted small">{error ?? 'Keine Koordinaten · Google Maps API-Key fehlt (.env)'}</p>
         {children}
       </div>
     );
@@ -275,7 +306,7 @@ function NoKeyMap({ markers, paths, labels, camper, onMarkerClick, onMarkerDrag,
           🚐
         </div>
       )}
-      <span className="nokey-hint">Vorschau ohne Google Maps (API-Key fehlt)</span>
+      <span className="nokey-hint">{error ?? 'Vorschau ohne Google Maps (API-Key fehlt)'}</span>
       {children}
     </div>
   );

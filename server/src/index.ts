@@ -4,8 +4,10 @@ import path from 'node:path';
 import express from 'express';
 import { api } from './api';
 import { config, uploadsDir } from './config';
+import { geocodeMissing } from './maps';
 import { attachRealtime } from './realtime';
 import { seedIfEmpty } from './seed';
+import { listTrips } from './store';
 
 seedIfEmpty();
 
@@ -28,4 +30,5 @@ attachRealtime(server);
 server.listen(config.port, () => {
   console.log(`NEUGIER läuft auf http://localhost:${config.port}`);
   if (config.devLogin) console.log('Dev-Login aktiv (kein GOOGLE_CLIENT_ID gesetzt oder DEV_LOGIN=true)');
+  for (const trip of listTrips()) void geocodeMissing(trip.id).catch((error) => console.error('Geokodierung:', error));
 });

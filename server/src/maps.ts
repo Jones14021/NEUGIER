@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import type { PlaceResult, RouteLeg, RouteResult, Stop } from '@neugier/shared';
 import { config } from './config';
 import { db } from './db';
-import { applyOps, getState } from './store';
+import { applyOps, getEntity, getState } from './store';
 
 type Pt = Pick<Stop, 'name' | 'lat' | 'lng' | 'placeId' | 'address'>;
 
@@ -90,8 +90,16 @@ export async function geocodeMissing(tripId: string): Promise<void> {
     const state = getState(tripId);
     if (!state) return;
     for (const s of state.stops.filter((x) => x.lat == null && !x.geoFailed && (x.address || x.name))) {
-      const q = [s.address || s.name, state.trip.region].filter(Boolean).join(', ');
-      const hit = (await searchPlaces(q).catch(() => []))[0];
+      const q = [s.address || s.name, s.kind === 'transport' ? '' : state.trip.region].filter(Boolean).join(', ');
+      let hit: PlaceResult | undefined;
+      try {
+        [hit] = await searchPlaces(q);
+      } catch (error) {
+        console.warn('Geokodierung unterbrochen:', (error as Error).message);
+        break;
+      }
+      const current = getEntity('stop', s.id) as Stop | null;
+      if (!current || current.lat != null || current.lng != null || current.name !== s.name || current.address !== s.address) continue;
       const patch = hit
         ? { lat: hit.lat, lng: hit.lng, placeId: hit.placeId, address: s.address || hit.address, geoFailed: false }
         : { geoFailed: true };
@@ -123,8 +131,7 @@ export async function searchPlaces(q: string, bias?: { lat: number; lng: number 
     body: JSON.stringify(body),
   });
   if (!r.ok) {
-    console.warn('Places API', r.status, await r.text());
-    return [];
+    throw new Error(`Places API: HTTP ${r.status}`);
   }
   const data = (await r.json()) as {
     places?: {
