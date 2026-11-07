@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Send } from 'lucide-react';
-import type { ChatMessage, ProposedChange } from '@neugier/shared';
+import type { ChatMessage, ChatResponse, ProposedChange } from '@neugier/shared';
 import { fmtDate, proposalToOps } from '@neugier/shared';
 import { api } from '../api';
 import { ProposalDiff } from '../components/ProposalDiff';
+import { RichTextView } from '../components/RichText';
 import { useTrip } from '../store';
 
 const KEY = 'neugier.chat';
@@ -13,6 +14,7 @@ const SUGGESTIONS = [
   'Wo kann ich an diesem Tag duschen?',
   'Ist die Etappe an diesem Tag zu lang?',
   'Welche Buchungen sind noch offen?',
+  'Wo gibt es auf der Route Dump-Stationen und Frischwasser?',
 ];
 
 /** KI-Assistent: bekommt die komplette Reise als Kontext, Vorschläge erscheinen als Diff. */
@@ -39,10 +41,10 @@ export function Chat() {
     setInput('');
     setBusy(true);
     try {
-      const r = await api<{ content: string; proposal: ProposedChange[] }>(`/trips/${state.trip.id}/chat`, {
-        body: { messages: next, dayId },
+      const r = await api<ChatResponse>(`/trips/${state.trip.id}/chat`, {
+        body: { messages: next.map(({ role, content }) => ({ role, content })), dayId },
       });
-      setMessages([...next, { role: 'assistant', content: r.content, proposal: r.proposal }]);
+      setMessages([...next, { role: 'assistant', content: r.content, proposal: r.proposal, sources: r.sources }]);
       if (r.proposal.length) setOpenDiff(next.length);
     } catch (e) {
       setMessages([...next, { role: 'assistant', content: `⚠️ ${(e as Error).message}` }]);
@@ -68,7 +70,10 @@ export function Chat() {
           </button>
         )}
       </div>
-      {day && <p className="small muted">Kontext: {fmtDate(day.date)} – {day.title}</p>}
+      <p className="small muted">
+        {day ? `Kontext: ${fmtDate(day.date)} – ${day.title}` : 'Kontext: ganze Reise'}
+        {config.webSearch && ' · 🔎 Websuche aktiv'}
+      </p>
       {!config.llmConfigured && <p className="card small">Kein API-Key hinterlegt. Ein Admin kann ihn unter „Mehr → Admin" eintragen.</p>}
 
       <div className="messages">
@@ -84,7 +89,17 @@ export function Chat() {
         )}
         {messages.map((m, i) => (
           <div key={i} className={`msg ${m.role}`}>
-            <div className="pre">{m.content}</div>
+            {m.role === 'assistant' ? <RichTextView text={m.content} /> : <div className="pre">{m.content}</div>}
+            {m.sources && m.sources.length > 0 && (
+              <div className="sources small">
+                🔎{' '}
+                {m.sources.map((s) => (
+                  <a key={s.url} href={s.url} target="_blank" rel="noreferrer">
+                    {s.title || s.url}
+                  </a>
+                ))}
+              </div>
+            )}
             {m.proposal && m.proposal.length > 0 && (
               <>
                 {openDiff === i ? (

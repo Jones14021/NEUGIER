@@ -18,11 +18,13 @@ export function ProposalDiff({
   proposal,
   onApply,
   onCancel,
+  applyLabel,
 }: {
   state: TripState;
   proposal: ProposedChange[];
   onApply: (changes: ProposedChange[]) => void;
   onCancel: () => void;
+  applyLabel?: string;
 }) {
   const [changes, setChanges] = useState(proposal);
   const [dec, setDec] = useState<Decision[]>(proposal.map(() => 'accept'));
@@ -169,7 +171,7 @@ export function ProposalDiff({
         </button>
         <span className="grow" />
         <button className="btn primary" disabled={!accepted.length} onClick={() => onApply(accepted)}>
-          {accepted.length} Änderung{accepted.length === 1 ? '' : 'en'} übernehmen
+          {applyLabel ? `${applyLabel} (${accepted.length})` : `${accepted.length} Änderung${accepted.length === 1 ? '' : 'en'} übernehmen`}
         </button>
       </div>
 

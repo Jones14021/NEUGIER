@@ -9,6 +9,8 @@ interface Settings {
   llmBaseUrl: string;
   llmModel: string;
   llmApiKeySet: boolean;
+  webSearch: 'off' | 'tavily' | 'native';
+  searchApiKeySet: boolean;
 }
 
 /** Admin: Rollen vergeben (Zuschauer/Mitarbeiter/Admin) und KI-Einstellungen. */
@@ -17,6 +19,7 @@ export function Admin() {
   const [users, setUsers] = useState<User[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [apiKey, setApiKey] = useState('');
+  const [searchKey, setSearchKey] = useState('');
 
   const load = () => {
     api<User[]>('/admin/users').then(setUsers);
@@ -37,8 +40,18 @@ export function Admin() {
   };
 
   const saveSettings = async () => {
-    await api('/admin/settings', { method: 'PUT', body: { llmBaseUrl: settings!.llmBaseUrl, llmModel: settings!.llmModel, llmApiKey: apiKey || undefined } });
+    await api('/admin/settings', {
+      method: 'PUT',
+      body: {
+        llmBaseUrl: settings!.llmBaseUrl,
+        llmModel: settings!.llmModel,
+        llmApiKey: apiKey || undefined,
+        webSearch: settings!.webSearch,
+        searchApiKey: searchKey || undefined,
+      },
+    });
     setApiKey('');
+    setSearchKey('');
     toast('Gespeichert');
     load();
     reload();
@@ -116,6 +129,26 @@ export function Admin() {
             API-Key {settings.llmApiKeySet && <span className="badge green">hinterlegt</span>}
             <input type="password" placeholder={settings.llmApiKeySet ? '•••••• (leer lassen = unverändert)' : 'API-Key'} value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
           </label>
+          <label>
+            Websuche
+            <select value={settings.webSearch} onChange={(e) => setSettings({ ...settings, webSearch: e.target.value as Settings['webSearch'] })}>
+              <option value="off">Aus</option>
+              <option value="tavily">Tavily (funktioniert mit jedem Modell, z. B. GitHub Models)</option>
+              <option value="native">Native Websuche des Modells (z. B. OpenAI gpt-4o-search-preview)</option>
+            </select>
+          </label>
+          {settings.webSearch === 'tavily' && (
+            <label>
+              Tavily API-Key {settings.searchApiKeySet && <span className="badge green">hinterlegt</span>}
+              <input
+                type="password"
+                placeholder={settings.searchApiKeySet ? '•••••• (leer lassen = unverändert)' : 'tvly-…'}
+                value={searchKey}
+                onChange={(e) => setSearchKey(e.target.value)}
+              />
+            </label>
+          )}
+          <p className="small muted">Anleitung: docs/ENTWICKLER.md → „KI-Assistent mit Websuche“.</p>
           <button className="btn primary" onClick={saveSettings}>
             Speichern
           </button>

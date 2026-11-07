@@ -14,6 +14,10 @@ app.use('/api', api());
 app.use('/uploads', express.static(uploadsDir, { maxAge: '30d', immutable: true }));
 
 if (fs.existsSync(config.webDist)) {
+  app.get('/sw.js', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(config.webDist, 'sw.js'));
+  });
   app.use(express.static(config.webDist));
   // SPA-Fallback
   app.get(/^\/(?!api|uploads|ws).*/, (_req, res) => res.sendFile(path.join(config.webDist, 'index.html')));

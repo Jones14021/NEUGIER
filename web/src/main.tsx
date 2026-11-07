@@ -13,9 +13,19 @@ function Root() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
 
   useEffect(() => {
-    api<AppConfig>('/config').then(setConfig);
-    api<User | null>('/me').then(setUser);
+    api<AppConfig>('/config')
+      .then(setConfig)
+      .catch(() => setConfig(JSON.parse(localStorage.getItem('neugier.config') ?? 'null')));
+    api<User | null>('/me')
+      .then(setUser)
+      .catch(() => setUser(JSON.parse(localStorage.getItem('neugier.me') ?? 'null')));
   }, []);
+
+  // Für den Offline-Start merken
+  useEffect(() => {
+    if (config) localStorage.setItem('neugier.config', JSON.stringify(config));
+    if (user) localStorage.setItem('neugier.me', JSON.stringify(user));
+  }, [config, user]);
 
   if (!config || user === undefined) return <div className="center muted">Lädt …</div>;
   if (!user) return <Login config={config} onLogin={setUser} />;
@@ -37,6 +47,11 @@ function Root() {
       <App onLogout={() => setUser(null)} />
     </StoreProvider>
   );
+}
+
+// Service Worker nur im Produktions-Build (im Vite-Dev-Server würde er HMR stören)
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 }
 
 createRoot(document.getElementById('root')!).render(

@@ -1,7 +1,9 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AdvancedMarker, APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
 import { LocateFixed } from 'lucide-react';
 import { useStore } from '../store';
+
+type LatLng = { lat: number; lng: number };
 
 export interface MapMarker {
   id: string;
@@ -11,27 +13,42 @@ export interface MapMarker {
   color: string;
   title?: string;
   active?: boolean;
-  /** Kleinere, blassere Darstellung (z. B. Kontext-Punkte). */
+  /** Kleinere, blassere Darstellung (z. B. Kontext-Punkte, zurückliegende Tage). */
   muted?: boolean;
+  /** Kleine Icons unter dem Pin (z. B. ⚡🚿💧). */
+  badges?: string;
+  /** Per Drag verschiebbar (Ort ändern wie in Komoot). */
+  draggable?: boolean;
 }
 
 export interface MapPath {
   id: string;
-  path: { lat: number; lng: number }[];
+  path: LatLng[];
   color: string;
   dashed?: boolean;
   weight?: number;
   opacity?: number;
 }
 
+export interface MapLabel {
+  id: string;
+  at: LatLng;
+  text: string;
+}
+
 interface Props {
   markers: MapMarker[];
   paths: MapPath[];
+  /** Fahrzeit-Etiketten auf der Route (wie die Routenvorschau in Google Maps). */
+  labels?: MapLabel[];
+  /** Wohnmobil-Symbol (aktuelle Position). */
+  camper?: (LatLng & { title: string; live: boolean }) | null;
   /** Wenn sich der Wert ändert, wird auf alle Marker gezoomt. */
   fitKey: string;
-  focus?: { lat: number; lng: number } | null;
+  focus?: LatLng | null;
   onMarkerClick?: (id: string) => void;
-  onMapClick?: (p: { lat: number; lng: number }) => void;
+  onMarkerDrag?: (id: string, p: LatLng) => void;
+  onMapClick?: (p: LatLng) => void;
   children?: ReactNode;
 }
 
@@ -56,31 +73,48 @@ export function MapView(props: Props) {
         defaultZoom={5}
         gestureHandling="greedy"
         disableDefaultUI
-        zoomControl={false}
         clickableIcons={false}
         onClick={(e) => e.detail.latLng && props.onMapClick?.(e.detail.latLng)}
       >
+        <Paths paths={props.paths} />
+        {props.labels?.map((l) => (
+          <AdvancedMarker key={`l-${l.id}`} position={l.at} zIndex={5} clickable={false}>
+            <div className="leg-label">{l.text}</div>
+          </AdvancedMarker>
+        ))}
         {props.markers.map((m) => (
           <AdvancedMarker
             key={m.id}
             position={m}
             title={m.title}
+            draggable={m.draggable}
             zIndex={m.active ? 1000 : m.muted ? 1 : 10}
             onClick={() => props.onMarkerClick?.(m.id)}
+            onDragEnd={(e) => e.latLng && props.onMarkerDrag?.(m.id, { lat: e.latLng.lat(), lng: e.latLng.lng() })}
           >
-            <div
-              className={`pin${m.active ? ' active' : ''}${m.muted ? ' muted' : ''}`}
-              style={{ background: m.color }}
-            >
-              {m.label}
-            </div>
+            <Pin m={m} />
           </AdvancedMarker>
         ))}
-        <Paths paths={props.paths} />
+        {props.camper && (
+          <AdvancedMarker position={props.camper} zIndex={3000} title={props.camper.title}>
+            <div className={`camper${props.camper.live ? ' live' : ''}`}>🚐</div>
+          </AdvancedMarker>
+        )}
         <Fitter markers={props.markers} fitKey={props.fitKey} focus={props.focus} />
         <MyLocation />
       </Map>
       {props.children}
+    </div>
+  );
+}
+
+function Pin({ m }: { m: MapMarker }) {
+  return (
+    <div className={`pin-wrap${m.draggable ? ' drag' : ''}`}>
+      <div className={`pin${m.active ? ' active' : ''}${m.muted ? ' muted' : ''}`} style={{ background: m.color }}>
+        {m.label}
+      </div>
+      {m.badges && <div className="pin-badges">{m.badges}</div>}
     </div>
   );
 }
@@ -98,7 +132,7 @@ function Paths({ paths }: { paths: MapPath[] }) {
           strokeOpacity: p.dashed ? 0 : (p.opacity ?? 0.9),
           strokeWeight: p.weight ?? 4,
           icons: p.dashed
-            ? [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 3 }, offset: '0', repeat: '14px' }]
+            ? [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: p.opacity ?? 1, scale: 3 }, offset: '0', repeat: '14px' }]
             : undefined,
           clickable: false,
         }),
@@ -110,8 +144,10 @@ function Paths({ paths }: { paths: MapPath[] }) {
 
 function Fitter({ markers, fitKey, focus }: Pick<Props, 'markers' | 'fitKey' | 'focus'>) {
   const map = useMap();
+  const last = useRef('');
   useEffect(() => {
-    if (!map || !markers.length) return;
+    if (!map || !markers.length || last.current === fitKey) return;
+    last.current = fitKey;
     if (markers.length === 1) {
       map.setCenter(markers[0]);
       map.setZoom(12);
@@ -120,8 +156,7 @@ function Fitter({ markers, fitKey, focus }: Pick<Props, 'markers' | 'fitKey' | '
     const b = new google.maps.LatLngBounds();
     markers.forEach((m) => b.extend(m));
     map.fitBounds(b, 48);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, fitKey]);
+  }, [map, fitKey, markers]);
   useEffect(() => {
     if (map && focus) map.panTo(focus);
   }, [map, focus]);
@@ -131,7 +166,7 @@ function Fitter({ markers, fitKey, focus }: Pick<Props, 'markers' | 'fitKey' | '
 /** Quick Action: zum eigenen Standort springen (wie in Google Maps). */
 function MyLocation() {
   const map = useMap();
-  const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [pos, setPos] = useState<LatLng | null>(null);
   const locate = () =>
     navigator.geolocation.getCurrentPosition(
       (p) => {
@@ -157,9 +192,11 @@ function MyLocation() {
   );
 }
 
-/** Ersatzdarstellung ohne API-Key: einfache Projektion der Punkte. */
-function NoKeyMap({ markers, paths, onMarkerClick, children }: Props) {
-  const pts = [...markers, ...paths.flatMap((p) => p.path)];
+/** Ersatzdarstellung ohne API-Key: einfache Projektion der Punkte (Drag ändert Koordinaten ebenfalls). */
+function NoKeyMap({ markers, paths, labels, camper, onMarkerClick, onMarkerDrag, children }: Props) {
+  const box = useRef<HTMLDivElement>(null);
+  const [drag, setDrag] = useState<{ id: string; x: number; y: number } | null>(null);
+  const pts = [...markers, ...paths.flatMap((p) => p.path), ...(camper ? [camper] : [])];
   if (!pts.length) {
     return (
       <div className="map nokey">
@@ -176,8 +213,25 @@ function NoKeyMap({ markers, paths, onMarkerClick, children }: Props) {
   const h = Math.max(maxLat - minLat, 0.01);
   const x = (lng: number) => (pad + ((lng - minLng) / w) * (1 - 2 * pad)) * 100;
   const y = (lat: number) => (pad + ((maxLat - lat) / h) * (1 - 2 * pad)) * 100;
+  const unproject = (px: number, py: number): LatLng => ({
+    lng: minLng + ((px / 100 - pad) / (1 - 2 * pad)) * w,
+    lat: maxLat - ((py / 100 - pad) / (1 - 2 * pad)) * h,
+  });
+  const rel = (e: React.PointerEvent) => {
+    const r = box.current!.getBoundingClientRect();
+    return { x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 };
+  };
+
   return (
-    <div className="map nokey">
+    <div
+      className="map nokey"
+      ref={box}
+      onPointerMove={(e) => drag && setDrag({ id: drag.id, ...rel(e) })}
+      onPointerUp={() => {
+        if (drag) onMarkerDrag?.(drag.id, unproject(drag.x, drag.y));
+        setDrag(null);
+      }}
+    >
       <svg viewBox="0 0 100 100" preserveAspectRatio="none">
         {paths.map((p) => (
           <polyline
@@ -185,26 +239,50 @@ function NoKeyMap({ markers, paths, onMarkerClick, children }: Props) {
             points={p.path.map((q) => `${x(q.lng)},${y(q.lat)}`).join(' ')}
             fill="none"
             stroke={p.color}
-            strokeWidth={0.6}
-            strokeDasharray={p.dashed ? '1.5 1' : undefined}
+            strokeOpacity={p.opacity ?? 1}
+            strokeDasharray={p.dashed ? '4 3' : undefined}
             vectorEffect="non-scaling-stroke"
             style={{ strokeWidth: p.weight ?? 3 }}
           />
         ))}
       </svg>
-      {markers.map((m) => (
-        <div
-          key={m.id}
-          className={`pin abs${m.active ? ' active' : ''}${m.muted ? ' muted' : ''}`}
-          style={{ left: `${x(m.lng)}%`, top: `${y(m.lat)}%`, background: m.color }}
-          title={m.title}
-          onClick={() => onMarkerClick?.(m.id)}
-        >
-          {m.label}
+      {labels?.map((l) => (
+        <div key={l.id} className="leg-label abs" style={{ left: `${x(l.at.lng)}%`, top: `${y(l.at.lat)}%` }}>
+          {l.text}
         </div>
       ))}
+      {markers.map((m) => {
+        const pos = drag?.id === m.id ? { left: `${drag.x}%`, top: `${drag.y}%` } : { left: `${x(m.lng)}%`, top: `${y(m.lat)}%` };
+        return (
+          <div
+            key={m.id}
+            className="abs-pin"
+            style={pos}
+            title={m.title}
+            onClick={() => onMarkerClick?.(m.id)}
+            onPointerDown={(e) => {
+              if (!m.draggable) return;
+              e.preventDefault();
+              setDrag({ id: m.id, ...rel(e) });
+            }}
+          >
+            <Pin m={m} />
+          </div>
+        );
+      })}
+      {camper && (
+        <div className={`camper abs${camper.live ? ' live' : ''}`} style={{ left: `${x(camper.lng)}%`, top: `${y(camper.lat)}%` }} title={camper.title}>
+          🚐
+        </div>
+      )}
       <span className="nokey-hint">Vorschau ohne Google Maps (API-Key fehlt)</span>
       {children}
     </div>
   );
+}
+
+/** Mittelpunkt einer Linie (für Etiketten). */
+export function midpoint(path: LatLng[]): LatLng | null {
+  if (!path.length) return null;
+  return path[Math.floor(path.length / 2)];
 }

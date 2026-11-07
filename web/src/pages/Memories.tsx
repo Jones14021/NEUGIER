@@ -3,8 +3,14 @@ import { ImagePlus, Pencil, Trash } from 'lucide-react';
 import type { Memory } from '@neugier/shared';
 import { fmtDate, newId, sortedDays, todayIso } from '@neugier/shared';
 import { uploadPhotos } from '../api';
+import { RichTextEditor, RichTextView } from '../components/RichText';
 import { findToday } from '../hooks';
 import { useTrip } from '../store';
+
+function MemoryEditor({ initial, onDone }: { initial: string; onDone: (t: string) => void }) {
+  const [t, setT] = useState(initial);
+  return <RichTextEditor autoFocus value={t} onChange={setT} onBlur={() => onDone(t)} />;
+}
 
 /** Fotos & Erinnerungen (auch rein textuell) – getrennt von der Planung. */
 export function Memories() {
@@ -59,7 +65,7 @@ export function Memories() {
               </option>
             ))}
           </select>
-          <textarea rows={3} placeholder="Was habt ihr erlebt?" value={text} onChange={(e) => setText(e.target.value)} />
+          <RichTextEditor placeholder="Was habt ihr erlebt?" value={text} onChange={setText} />
           {photos.length > 0 && (
             <div className="photo-grid">
               {photos.map((p) => (
@@ -99,17 +105,15 @@ export function Memories() {
               )}
             </div>
             {editing === m.id ? (
-              <textarea
-                autoFocus
-                rows={4}
-                defaultValue={m.text}
-                onBlur={(e) => {
+              <MemoryEditor
+                initial={m.text}
+                onDone={(t) => {
                   setEditing(null);
-                  if (e.target.value !== m.text) apply([{ op: 'update', type: 'memory', id: m.id, patch: { text: e.target.value } }], 'Erinnerung bearbeitet');
+                  if (t !== m.text) apply([{ op: 'update', type: 'memory', id: m.id, patch: { text: t } }], 'Erinnerung bearbeitet');
                 }}
               />
             ) : (
-              m.text && <p className="pre">{m.text}</p>
+              m.text && <RichTextView text={m.text} />
             )}
             {m.photos.length > 0 && (
               <div className="photo-grid">

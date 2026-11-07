@@ -3,6 +3,7 @@ import { Search, X } from 'lucide-react';
 import type { CampType, PlaceResult, Stop, StopKind, StopScope } from '@neugier/shared';
 import { CAMP_LABEL, defaultScope, KIND_ICON, KIND_LABEL, SCOPE_LABEL } from '@neugier/shared';
 import { api } from '../api';
+import { RichTextEditor } from './RichText';
 
 interface Props {
   stop: Stop;
@@ -39,12 +40,22 @@ export function StopEditor({ stop, isNew, bias, onSave, onDelete, onClose }: Pro
     setResults(null);
   };
 
+  /** Adresse geändert: alte Koordinaten verwerfen, Server geokodiert neu (Route aktualisiert sich live). */
+  const setAddress = (address: string) => {
+    const m = /^\s*(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)\s*$/.exec(address);
+    setS((p) =>
+      m
+        ? { ...p, address, lat: Number(m[1]), lng: Number(m[2]), placeId: undefined, geoFailed: false }
+        : { ...p, address, lat: undefined, lng: undefined, placeId: undefined, geoFailed: false },
+    );
+  };
+
   const setKind = (kind: StopKind) =>
     setS((p) => ({
       ...p,
       kind,
       scope: isNew ? defaultScope(kind) : p.scope,
-      camp: kind === 'campsite' || kind === 'accommodation' ? (p.camp ?? { type: '', powered: false, shower: false }) : p.camp,
+      camp: kind === 'campsite' || kind === 'accommodation' ? (p.camp ?? { type: '' }) : p.camp,
     }));
 
   const isCamp = s.kind === 'campsite' || s.kind === 'accommodation';
@@ -81,19 +92,22 @@ export function StopEditor({ stop, isNew, bias, onSave, onDelete, onClose }: Pro
               ))}
             </div>
           )}
-          {s.lat != null && (
-            <p className="small muted">
-              📍 {s.address || `${s.lat.toFixed(5)}, ${s.lng?.toFixed(5)}`}{' '}
-              <button className="link" onClick={() => setS((p) => ({ ...p, lat: undefined, lng: undefined, placeId: undefined, address: undefined }))}>
-                entfernen
-              </button>
-            </p>
-          )}
-
           <label>
             Name
             <input value={s.name} onChange={(e) => set('name', e.target.value)} />
           </label>
+          <label>
+            Adresse / Ort
+            <input
+              value={s.address ?? ''}
+              placeholder="Straße, Ort oder Koordinaten – Route passt sich automatisch an"
+              onChange={(e) => setAddress(e.target.value)}
+            />
+          </label>
+          <p className="small muted">
+            {s.lat != null ? `📍 ${s.lat.toFixed(5)}, ${s.lng?.toFixed(5)}` : '📍 Koordinaten werden nach dem Speichern über Google ermittelt'}
+            {s.lat != null && ' · Tipp: Pin auf der Karte ziehen'}
+          </p>
 
           <div className="kind-grid">
             {(Object.keys(KIND_LABEL) as StopKind[]).map((k) => (
@@ -119,32 +133,14 @@ export function StopEditor({ stop, isNew, bias, onSave, onDelete, onClose }: Pro
           {isCamp && (
             <fieldset>
               <legend>Übernachtung</legend>
-              <select
-                value={s.camp?.type ?? ''}
-                onChange={(e) => set('camp', { ...(s.camp ?? { powered: false, shower: false }), type: e.target.value as CampType })}
-              >
+              <select value={s.camp?.type ?? ''} onChange={(e) => set('camp', { ...s.camp, type: e.target.value as CampType })}>
                 {(Object.keys(CAMP_LABEL) as CampType[]).map((c) => (
                   <option key={c} value={c}>
                     {CAMP_LABEL[c]}
                   </option>
                 ))}
               </select>
-              <label className="check">
-                <input
-                  type="checkbox"
-                  checked={!!s.camp?.powered}
-                  onChange={(e) => set('camp', { type: '', shower: false, ...s.camp, powered: e.target.checked })}
-                />
-                Strom (powered)
-              </label>
-              <label className="check">
-                <input
-                  type="checkbox"
-                  checked={!!s.camp?.shower}
-                  onChange={(e) => set('camp', { type: '', powered: false, ...s.camp, shower: e.target.checked })}
-                />
-                Duschen vor Ort
-              </label>
+              <p className="small muted">Strom, Dusche, Frischwasser und Dump-Station stellst du pro Tag unter „Ausstattung“ ein.</p>
             </fieldset>
           )}
 
@@ -166,10 +162,10 @@ export function StopEditor({ stop, isNew, bias, onSave, onDelete, onClose }: Pro
               <option value="gebucht">Gebucht</option>
             </select>
           </label>
-          <label>
-            Notizen
-            <textarea rows={4} value={s.notes} onChange={(e) => set('notes', e.target.value)} />
-          </label>
+          <div className="field">
+            <span className="field-label">Notizen</span>
+            <RichTextEditor value={s.notes} onChange={(v) => set('notes', v)} placeholder="Details, Tipps, Zeiten …" />
+          </div>
           <label>
             Links (einer pro Zeile)
             <textarea
