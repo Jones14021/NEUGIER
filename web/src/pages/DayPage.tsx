@@ -59,7 +59,10 @@ export function DayPage() {
   const { start, stops } = useMemo(() => (day ? dayRoute(state, day) : { stops: [] as Stop[] }), [state, day]);
   const routePts = useMemo(() => [start, ...stops].filter((s): s is Stop => !!s), [start, stops]);
   const routed = useRoute(routePts.filter(hasCoords), state.trip.region);
-  const mainPts = useMemo(() => [start, ...stops.filter((s) => s.scope === 'main')].filter((s): s is Stop => !!s && hasCoords(s)), [start, stops]);
+  const mainPts = useMemo(
+    () => [start, ...stops.filter((s) => s.scope === 'main')].filter((s): s is Stop & { lat: number; lng: number } => !!s && hasCoords(s)),
+    [start, stops],
+  );
 
   if (!day) return <div className="center muted">Tag nicht gefunden</div>;
 
