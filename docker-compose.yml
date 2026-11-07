@@ -1,0 +1,13 @@
+services:
+  neugier:
+    build: .
+    image: neugier:latest
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      # Nur lokal binden – von außen via `tailscale serve --bg 8080`
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./data:/data

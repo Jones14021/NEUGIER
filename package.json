@@ -1,0 +1,16 @@
+{
+  "name": "neugier",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "shared",
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @neugier/server & npm run dev -w @neugier/web & wait",
+    "build": "npm run build -w @neugier/web",
+    "start": "npm run start -w @neugier/server",
+    "typecheck": "npm run typecheck -w @neugier/server && npm run typecheck -w @neugier/web"
+  }
+}

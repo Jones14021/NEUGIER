@@ -1,0 +1,20 @@
+# Entwicklung mit Hot-Reload: docker compose -f docker-compose.dev.yml up
+# Web: http://localhost:5173 (Vite, proxied /api zum Server auf 8080)
+services:
+  dev:
+    image: node:24-bookworm-slim
+    working_dir: /app
+    user: "${UID:-1000}:${GID:-1000}"
+    command: sh -c "npm install --no-audit --no-fund && npm run dev"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      HOME: /tmp
+      DATA_DIR: /app/data
+      NODE_OPTIONS: --disable-warning=ExperimentalWarning
+    ports:
+      - "127.0.0.1:5173:5173"
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - .:/app
