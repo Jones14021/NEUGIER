@@ -9,6 +9,7 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
+    "@neugier/shared": "*",
     "@vis.gl/react-google-maps": "^1.10.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
