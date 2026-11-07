@@ -33,10 +33,10 @@ export function attachRealtime(server: Server): void {
   wss.on('connection', (ws, req) => {
     const user = userFromCookieHeader(req.headers.cookie);
     if (!user || user.role === 'pending') {
-      ws.close(4401, 'unauthorized');role: user.role, 
+      ws.close(4401, 'unauthorized');
       return;
     }
-    const client: Client = { ws, tripId: null, name: user.name, userId: user.id, dayId: null };
+    const client: Client = { ws, tripId: null, name: user.name, userId: user.id, role: user.role, dayId: null };
     clients.add(client);
     ws.on('message', (raw) => {
       try {
