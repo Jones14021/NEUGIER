@@ -1,0 +1,284 @@
+import path from 'node:path';
+import express, { type NextFunction, type Request, type Response } from 'express';
+import multer from 'multer';
+import type { AnyEntity, ChatMessage, Op, Role, Trip, TripExport, TypedEntity } from '@neugier/shared';
+import { newId } from '@neugier/shared';
+import { attachUser, deleteUser, listUsers, loginDev, loginGoogle, logout, requireRole, setRole } from './auth';
+import { config, uploadsDir } from './config';
+import { setSetting } from './db';
+import { toJson, toSplidCsv, toSplidText } from './exporters';
+import { parseExcel } from './importers/excel';
+import { chat, llmSettings } from './llm';
+import { computeRoute, searchPlaces } from './maps';
+import { buildMergeOps, fromExport, planMerge, type Resolution } from './merge';
+import { applyOps, getState, listChanges, listTrips, restoreVersion, rollbackBatch } from './store';
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 30 * 1024 * 1024 } });
+const photoUpload = multer({
+  storage: multer.diskStorage({
+    destination: uploadsDir,
+    filename: (_req, file, cb) => cb(null, `${newId()}${path.extname(file.originalname).toLowerCase() || '.jpg'}`),
+  }),
+  limits: { fileSize: 25 * 1024 * 1024 },
+});
+
+/** Async-Handler-Wrapper: Fehler als JSON zurückgeben. */
+const h =
+  (fn: (req: Request, res: Response) => unknown) =>
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await fn(req, res);
+    } catch (e) {
+      next(e);
+    }
+  };
+
+function actor(req: Request) {
+  return { userName: req.user!.name, userId: req.user!.id };
+}
+
+function state(req: Request) {
+  const s = getState(String(req.params.tripId));
+  if (!s) throw Object.assign(new Error('Reise nicht gefunden'), { status: 404 });
+  return s;
+}
+
+/** Ausstehende Imports (Datei geparst, wartet auf Konfliktlösung). */
+const pendingImports = new Map<string, { tripId: string; source: string; entities: TypedEntity[] }>();
+
+export function api(): express.Router {
+  const r = express.Router();
+  r.use(express.json({ limit: '20mb' }));
+  r.use(attachUser);
+
+  r.get('/config', (_req, res) => {
+    res.json({
+      googleClientId: config.googleClientId,
+      devLogin: config.devLogin,
+      mapsApiKey: config.mapsApiKey,
+      mapId: config.mapId,
+      llmConfigured: !!llmSettings().apiKey,
+    });
+  });
+
+  // --- Auth ---
+  r.get('/me', (req, res) => res.json(req.user ?? null));
+  r.post('/auth/google', h(loginGoogle));
+  r.post('/auth/dev', loginDev);
+  r.post('/auth/logout', logout);
+
+  // --- Admin ---
+  r.get('/admin/users', requireRole('admin'), (_req, res) => res.json(listUsers()));
+  r.put('/admin/users/:id', requireRole('admin'), (req, res) => {
+    const role = req.body.role as Role;
+    if (!['pending', 'viewer', 'editor', 'admin'].includes(role)) return res.status(400).json({ error: 'Ungültige Rolle' });
+    setRole(String(req.params.id), role);
+    res.json({ ok: true });
+  });
+  r.delete('/admin/users/:id', requireRole('admin'), (req, res) => {
+    if (req.params.id === req.user!.id) return res.status(400).json({ error: 'Du kannst dich nicht selbst löschen' });
+    deleteUser(String(req.params.id));
+    res.json({ ok: true });
+  });
+  r.get('/admin/settings', requireRole('admin'), (_req, res) => {
+    const s = llmSettings();
+    res.json({ llmBaseUrl: s.baseUrl, llmModel: s.model, llmApiKeySet: !!s.apiKey });
+  });
+  r.put('/admin/settings', requireRole('admin'), (req, res) => {
+    const { llmBaseUrl, llmModel, llmApiKey } = req.body as Record<string, string | undefined>;
+    if (llmBaseUrl !== undefined) setSetting('llm.baseUrl', llmBaseUrl);
+    if (llmModel !== undefined) setSetting('llm.model', llmModel);
+    if (llmApiKey) setSetting('llm.apiKey', llmApiKey);
+    res.json({ ok: true });
+  });
+
+  // --- Reisen ---
+  r.get('/trips', requireRole('viewer'), (_req, res) => res.json(listTrips()));
+  r.post(
+    '/trips',
+    requireRole('editor'),
+    h((req, res) => {
+      const trip: Trip = {
+        id: newId(),
+        name: req.body.name || 'Neue Reise',
+        region: req.body.region || '',
+        startDate: req.body.startDate || '',
+        endDate: req.body.endDate || '',
+        currency: req.body.currency || 'EUR',
+        members: req.body.members || [],
+        notes: '',
+      };
+      applyOps(trip.id, [{ op: 'create', type: 'trip', data: trip }], {
+        ...actor(req),
+        source: 'user',
+        label: 'Reise angelegt',
+      });
+      res.json(trip);
+    }),
+  );
+  r.get('/trips/:tripId', requireRole('viewer'), h((req, res) => res.json(state(req))));
+
+  r.post(
+    '/trips/:tripId/ops',
+    requireRole('editor'),
+    h((req, res) => {
+      const s = state(req);
+      const ops = req.body.ops as Op[];
+      const changes = applyOps(s.trip.id, ops, {
+        ...actor(req),
+        source: req.body.source === 'ai' ? 'ai' : 'user',
+        label: String(req.body.label || 'Änderung'),
+      });
+      res.json({ changes });
+    }),
+  );
+
+  // Kommentare dürfen auch Zuschauer schreiben und immer bearbeiten
+  r.post(
+    '/trips/:tripId/comments',
+    requireRole('viewer'),
+    h((req, res) => {
+      const s = state(req);
+      const { id, targetId, text } = req.body as { id?: string; targetId: string; text: string };
+      const now = new Date().toISOString();
+      const existing = id ? s.comments.find((c) => c.id === id) : undefined;
+      const data = existing
+        ? { ...existing, text }
+        : { id: newId(), targetId, text, author: req.user!.name, authorId: req.user!.id, createdAt: now };
+      const op: Op = text.trim() ? { op: 'put', type: 'comment', data } : { op: 'delete', type: 'comment', id: data.id };
+      applyOps(s.trip.id, [op], { ...actor(req), source: 'user', label: 'Kommentar' });
+      res.json(data);
+    }),
+  );
+
+  // --- Versionshistorie ---
+  r.get(
+    '/trips/:tripId/history',
+    requireRole('viewer'),
+    h((req, res) => {
+      res.json(listChanges(String(req.params.tripId), { entityId: req.query.entityId as string | undefined }));
+    }),
+  );
+  r.post(
+    '/trips/:tripId/history/rollback',
+    requireRole('editor'),
+    h((req, res) => {
+      const tripId = state(req).trip.id;
+      const changes = req.body.changeId
+        ? restoreVersion(tripId, Number(req.body.changeId), actor(req))
+        : rollbackBatch(tripId, String(req.body.batchId), actor(req));
+      res.json({ changes });
+    }),
+  );
+
+  // --- Export ---
+  r.get(
+    '/trips/:tripId/export.json',
+    requireRole('viewer'),
+    h((req, res) => {
+      const s = state(req);
+      res.attachment(`${s.trip.name}.neugier.json`).json(toJson(s));
+    }),
+  );
+  r.get(
+    '/trips/:tripId/export/splid.csv',
+    requireRole('viewer'),
+    h((req, res) => {
+      const s = state(req);
+      res.attachment(`${s.trip.name}-ausgaben-splid.csv`).type('text/csv').send(toSplidCsv(s));
+    }),
+  );
+  r.get(
+    '/trips/:tripId/export/splid.txt',
+    requireRole('viewer'),
+    h((req, res) => res.type('text/plain').send(toSplidText(state(req)))),
+  );
+
+  // --- Import (2 Schritte: Analyse -> Konflikte lösen -> Übernehmen) ---
+  r.post(
+    '/trips/:tripId/import/analyze',
+    requireRole('editor'),
+    upload.single('file'),
+    h(async (req, res) => {
+      const s = state(req);
+      const file = req.file;
+      if (!file) return res.status(400).json({ error: 'Keine Datei' });
+      let entities: TypedEntity[];
+      let source: string;
+      if (/\.json$/i.test(file.originalname)) {
+        const data = JSON.parse(file.buffer.toString('utf8')) as TripExport;
+        if (data.format !== 'neugier-trip') throw new Error('Unbekanntes JSON-Format');
+        entities = fromExport([
+          ...data.days.map((d) => ({ type: 'day' as const, data: d as AnyEntity })),
+          ...data.stops.map((d) => ({ type: 'stop' as const, data: d as AnyEntity })),
+          ...data.expenses.map((d) => ({ type: 'expense' as const, data: d as AnyEntity })),
+          ...data.memories.map((d) => ({ type: 'memory' as const, data: d as AnyEntity })),
+          ...data.comments.map((d) => ({ type: 'comment' as const, data: d as AnyEntity })),
+        ]);
+        source = 'json';
+      } else {
+        entities = await parseExcel(file.buffer, { startDate: s.trip.startDate, currency: s.trip.currency });
+        source = 'excel';
+      }
+      const plan = planMerge(s, entities, source);
+      const importId = newId();
+      pendingImports.set(importId, { tripId: s.trip.id, source, entities });
+      res.json({ importId, source, ...plan });
+    }),
+  );
+  r.post(
+    '/trips/:tripId/import/apply',
+    requireRole('editor'),
+    h((req, res) => {
+      const s = state(req);
+      const pending = pendingImports.get(String(req.body.importId));
+      if (!pending || pending.tripId !== s.trip.id) return res.status(404).json({ error: 'Import abgelaufen' });
+      const plan = planMerge(s, pending.entities, pending.source);
+      const ops = buildMergeOps(s, pending.entities, plan, req.body.resolution as Resolution, pending.source);
+      const changes = applyOps(s.trip.id, ops, {
+        ...actor(req),
+        source: 'import',
+        label: `Import (${pending.source === 'excel' ? 'Excel' : 'JSON'})`,
+      });
+      pendingImports.delete(String(req.body.importId));
+      res.json({ changes: changes.length });
+    }),
+  );
+
+  // --- Karten ---
+  r.post(
+    '/maps/route',
+    requireRole('viewer'),
+    h(async (req, res) => res.json(await computeRoute(req.body.points ?? [], req.body.region ?? ''))),
+  );
+  r.get(
+    '/maps/search',
+    requireRole('viewer'),
+    h(async (req, res) => {
+      const lat = Number(req.query.lat);
+      const lng = Number(req.query.lng);
+      res.json(await searchPlaces(String(req.query.q ?? ''), Number.isFinite(lat) ? { lat, lng } : undefined));
+    }),
+  );
+
+  // --- Fotos ---
+  r.post('/uploads', requireRole('editor'), photoUpload.array('photos', 20), (req, res) => {
+    const files = (req.files as Express.Multer.File[]) ?? [];
+    res.json(files.map((f) => `/uploads/${f.filename}`));
+  });
+
+  // --- KI-Assistent ---
+  r.post(
+    '/trips/:tripId/chat',
+    requireRole('viewer'),
+    h(async (req, res) => {
+      res.json(await chat(state(req), req.body.messages as ChatMessage[], req.body.dayId));
+    }),
+  );
+
+  r.use((err: Error & { status?: number }, _req: Request, res: Response, _next: NextFunction) => {
+    console.error(err);
+    res.status(err.status ?? 500).json({ error: err.message });
+  });
+  return r;
+}
