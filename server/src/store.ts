@@ -53,7 +53,7 @@ export function getState(tripId: string): TripState | null {
  * Wendet Operationen atomar an, schreibt die Historie und benachrichtigt alle Clients.
  * Ein Aufruf = ein Batch (eine Zeile in der Versionshistorie, gemeinsam zurücksetzbar).
  */
-export function applyOps(tripId: string, ops: Op[], actor: Actor): Change[] {
+export function applyOps(tripId: string, ops: Op[], actor: Actor, withinTransaction?: () => void): Change[] {
   const batchId = newId();
   const ts = new Date().toISOString();
   const changes: Change[] = tx(() => {
@@ -114,6 +114,7 @@ export function applyOps(tripId: string, ops: Op[], actor: Actor): Change[] {
         ts,
       });
     }
+    withinTransaction?.();
     return out;
   });
   if (changes.length) events.emit('change', { tripId, changes });

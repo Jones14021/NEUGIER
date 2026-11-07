@@ -1,0 +1,2338 @@
+[
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2026-12-14",
+      "date": "2026-12-14",
+      "title": "Abflug in MUC",
+      "times": "Abflug in MUC 12:20",
+      "notes": "",
+      "shower": {
+        "status": "unklar",
+        "note": ""
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:row:2026-12-14:abflug-in-muc",
+      "dayId": "@key:xl:day:2026-12-14",
+      "order": 0,
+      "scope": "main",
+      "kind": "transport",
+      "name": "Abflug in MUC",
+      "notes": "",
+      "time": "12:20",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2026-12-16",
+      "date": "2026-12-16",
+      "title": "Unterkunft Auckland / (Manha Hotel Aucklad Airport)",
+      "times": "Ankunft in Auckland 05:50",
+      "notes": "Check in ab 14:00\nGebucht über Booking (Theresa)",
+      "shower": {
+        "status": "ja",
+        "note": "ja, im Hotel"
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:row:2026-12-16:ankunft-in-auckland",
+      "dayId": "@key:xl:day:2026-12-16",
+      "order": 0,
+      "scope": "main",
+      "kind": "transport",
+      "name": "Ankunft in Auckland",
+      "notes": "",
+      "time": "05:50",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2026-12-16",
+      "dayId": "@key:xl:day:2026-12-16",
+      "order": 1,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Dumpling essen :)",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "expense",
+    "data": {
+      "id": "",
+      "key": "xl:price:2026-12-16:unterkunft-auckland-manha-hote",
+      "dayId": "@key:xl:day:2026-12-16",
+      "stopId": null,
+      "title": "Dumpling essen :)",
+      "amount": 100,
+      "currency": "EUR",
+      "paidBy": "",
+      "splitBetween": [],
+      "note": "100"
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2026-12-17",
+      "date": "2026-12-17",
+      "title": "Ruakaka beach",
+      "times": "Übernahme Camper Auckland 10:00 · 13:00",
+      "notes": "buchen, sobald wir wissen, wann wir den Camper bekommen",
+      "shower": {
+        "status": "nein",
+        "note": "Freedom nein (Uretit hätte eine)"
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:row:2026-12-17:u-bernahme-camper-auckland",
+      "dayId": "@key:xl:day:2026-12-17",
+      "order": 0,
+      "scope": "main",
+      "kind": "transport",
+      "name": "Übernahme Camper Auckland",
+      "notes": "",
+      "time": "10:00",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2026-12-17",
+      "dayId": "@key:xl:day:2026-12-17",
+      "order": 1,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Fahrt von Auckland Camper Übernahme: 2h",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2026-12-17",
+      "dayId": "@key:xl:day:2026-12-17",
+      "order": 102,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Uretiti Beach Campsite (DOC) vorher buchen oder eine der zahlreichen Freedom campsites nutzen",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "offen",
+      "camp": {
+        "type": "doc"
+      }
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2026-12-18",
+      "date": "2026-12-18",
+      "title": "Smugglerś bay, ocean beach / matapouri, whale & wolleys bay",
+      "times": "",
+      "notes": "Gezeiten beachten  (bei Flut bleibt kaum Strand übrig)",
+      "shower": {
+        "status": "nein",
+        "note": "nein\n(Dusche auf dem Weg in Tutukaka auf dem Campingplatz)"
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2026-12-18",
+      "dayId": "@key:xl:day:2026-12-18",
+      "order": 0,
+      "scope": "day",
+      "kind": "activity",
+      "name": "1h zum ocean beach; dann weiter nach Norden nach Matapouri (nochmal 1h 15 min)",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2026-12-18",
+      "dayId": "@key:xl:day:2026-12-18",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "wolleys bay (western carpark) freedom",
+      "notes": "oder sandy bay carpark: freedom",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": "freedom"
+      }
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2026-12-19",
+      "date": "2026-12-19",
+      "title": "Matapouri -> Tararu (ca. 4 h)",
+      "times": "",
+      "notes": "",
+      "shower": {
+        "status": "nein",
+        "note": "nein"
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2026-12-19",
+      "dayId": "@key:xl:day:2026-12-19",
+      "order": 0,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Reisetag",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2026-12-19",
+      "dayId": "@key:xl:day:2026-12-19",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Tararu Beachfron North Reserve",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": ""
+      }
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2026-12-20",
+      "date": "2026-12-20",
+      "title": "Tararu -> Coromandel (1 h) -> Otama beach (45 min)-> Cathedral Cove & Hahei beach (55 min; eventuell weglassen wenn es zeitlich eng wird ) ->  Tairua (30 min)",
+      "times": "",
+      "notes": "https://checkout.lodgify.com/paradise-camping/272879/room?currency=EUR&arrival=2026-12-20&departure=2026-12-21&adults=2&roomId=333325",
+      "shower": {
+        "status": "ja",
+        "note": "Ja & powered campsite"
+      },
+      "facilities": {
+        "power": "ja",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2026-12-20",
+      "dayId": "@key:xl:day:2026-12-20",
+      "order": 0,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Reise & Strandtag",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2026-12-20",
+      "dayId": "@key:xl:day:2026-12-20",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Tairua campsite",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [
+        "https://checkout.lodgify.com/paradise-camping/272879/room?currency=EUR&arrival=2026-12-20&departure=2026-12-21&adults=2&roomId=333325"
+      ],
+      "booking": "",
+      "camp": {
+        "type": ""
+      }
+    }
+  },
+  {
+    "type": "expense",
+    "data": {
+      "id": "",
+      "key": "xl:price:2026-12-20:tararu-coromandel-1-h-otama-be",
+      "dayId": "@key:xl:day:2026-12-20",
+      "stopId": null,
+      "title": "Reise & Strandtag",
+      "amount": 272879,
+      "currency": "EUR",
+      "paidBy": "",
+      "splitBetween": [],
+      "note": "https://checkout.lodgify.com/paradise-camping/272879/room?currency=EUR&arrival=2026-12-19&departure=2026-12-20&adults=2&_gl=1*1qbhbnz*_ga*MTE2NDAzOTYwMC4xNzg4MDMyNjkx*_ga_PS45765VJ6*czE3ODgwMzI2OTAkbzEkZzAkdDE3ODgwMzI2OTUkajU1JGwwJGgw&_ga=2.194815076.854987230.1788032695-1164039600.1788032691&roomId=333325"
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2026-12-21",
+      "date": "2026-12-21",
+      "title": "Tairua -> Hobbiton Movie Set (Matamata) (1h 40 min) -> Tour (3h) -> putaruru blue spring (30 min) -> über Rotorua (See) nach campsite(ca. 1h)",
+      "times": "",
+      "notes": "Tickets bald schon buchen (3h Tour)\n--> alarm eingestellt für hobbiton movie set",
+      "shower": {
+        "status": "nein",
+        "note": "nein, self contained"
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2026-12-21",
+      "dayId": "@key:xl:day:2026-12-21",
+      "order": 0,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Hobbiton Tour, Reise & Blue springs",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2026-12-21",
+      "dayId": "@key:xl:day:2026-12-21",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Guy Roe Reserve campground",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "offen",
+      "camp": {
+        "type": ""
+      }
+    }
+  },
+  {
+    "type": "expense",
+    "data": {
+      "id": "",
+      "key": "xl:price:2026-12-21:tairua-hobbiton-movie-set-mata",
+      "dayId": "@key:xl:day:2026-12-21",
+      "stopId": null,
+      "title": "Hobbiton Tour, Reise & Blue springs",
+      "amount": 68,
+      "currency": "EUR",
+      "paidBy": "",
+      "splitBetween": [],
+      "note": "68 Euro / Person"
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2026-12-22",
+      "date": "2026-12-22",
+      "title": "Campsite -> Wai - O - Tapu (thermal wonderland) (14 min): Thermal Wonderland Tour (3 h)-> über Taupo nach TMotuoapa camping platz 1h 15 min)",
+      "times": "",
+      "notes": "3km Tour;\nfrüh dort zu sein, lohnt sich (opens at 8:30)",
+      "shower": {
+        "status": "ja",
+        "note": "Ja & powered campsite"
+      },
+      "facilities": {
+        "power": "ja",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2026-12-22",
+      "dayId": "@key:xl:day:2026-12-22",
+      "order": 0,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Thermal Wonderlands",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2026-12-22",
+      "dayId": "@key:xl:day:2026-12-22",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "motutere top 10 holiday park",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": "holiday_park"
+      }
+    }
+  },
+  {
+    "type": "expense",
+    "data": {
+      "id": "",
+      "key": "xl:price:2026-12-22:campsite-wai-o-tapu-thermal-wo",
+      "dayId": "@key:xl:day:2026-12-22",
+      "stopId": null,
+      "title": "Thermal Wonderlands",
+      "amount": 51,
+      "currency": "EUR",
+      "paidBy": "",
+      "splitBetween": [],
+      "note": "51 Euro / 2 Personen"
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2026-12-23",
+      "date": "2026-12-23",
+      "title": "Tongariro Crossing (Schicksalsberg)",
+      "times": "MUST have!",
+      "notes": "Tickets für Wandershuttle unbedingt vorher reservieren!\n\nhttps://www.komoot.com/tour/3242088781\n\nPuffer einplanen, falls schlechtwetter (mind. 2 Tage am selben campground)",
+      "shower": {
+        "status": "ja",
+        "note": "Ja & powered campsite"
+      },
+      "facilities": {
+        "power": "ja",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2026-12-23",
+      "dayId": "@key:xl:day:2026-12-23",
+      "order": 0,
+      "scope": "day",
+      "kind": "hike",
+      "name": "Wanderung: Tongariro Alpine Crossing (20 km; 750 hm; 5 h ohne Pausen)",
+      "notes": "Parkplatz bei Ketetahi (Ziel) -> Camper abstellen\nShuttle zum Startpunkt der Route Mangatepopo carpark",
+      "time": "",
+      "duration": "",
+      "links": [
+        "https://www.komoot.com/de-de/tour/3242088781?share_token=aQ794Yi6NrmQbUaqT7pVsGl2c5rMM8tzdD0PMzh17CzpFIHxL6&ref=wtd&t_s=referral&t_cid=route_share&t_ref_username=3298652191339"
+      ],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2026-12-23",
+      "dayId": "@key:xl:day:2026-12-23",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Motuoapa bay holiday park",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": "holiday_park"
+      }
+    }
+  },
+  {
+    "type": "expense",
+    "data": {
+      "id": "",
+      "key": "xl:price:2026-12-23:tongariro-crossing-schicksalsb",
+      "dayId": "@key:xl:day:2026-12-23",
+      "stopId": null,
+      "title": "Wanderung: Tongariro Alpine Crossing (20 km; 750 hm; 5 h ohne Pausen) / Parkplatz bei Ketetahi (Ziel) -> Camper abstellen / Shuttle zum Startpunkt der Route Mangatepopo carpark",
+      "amount": 81,
+      "currency": "EUR",
+      "paidBy": "",
+      "splitBetween": [],
+      "note": "81 Euro / 2 Personen\nhttps://www.tripadvisor.de/AttractionProductReview-g616351-d21086544-Tongariro_Crossing_Secure_Parking_Shuttle_one_way-Tongariro_National_Park_Manawatu.html"
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2026-12-24",
+      "date": "2026-12-24",
+      "title": "Taranaki Falls / Restday",
+      "times": "",
+      "notes": "",
+      "shower": {
+        "status": "ja",
+        "note": "Ja & powered campsite"
+      },
+      "facilities": {
+        "power": "ja",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2026-12-24",
+      "dayId": "@key:xl:day:2026-12-24",
+      "order": 0,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Restday",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2026-12-24",
+      "dayId": "@key:xl:day:2026-12-24",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Motuoapa bay holiday park",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": "holiday_park"
+      }
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2026-12-25",
+      "date": "2026-12-25",
+      "title": "Taupo, Tama Lakes, Umakarikari, et.",
+      "times": "Feiertag",
+      "notes": "",
+      "shower": {
+        "status": "ja",
+        "note": "Ja & powered campsite"
+      },
+      "facilities": {
+        "power": "ja",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2026-12-25",
+      "dayId": "@key:xl:day:2026-12-25",
+      "order": 0,
+      "scope": "day",
+      "kind": "hike",
+      "name": "größere Wanderung",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2026-12-25",
+      "dayId": "@key:xl:day:2026-12-25",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Motuoapa bay holiday park",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": "holiday_park"
+      }
+    }
+  },
+  {
+    "type": "expense",
+    "data": {
+      "id": "",
+      "key": "xl:price:2026-12-25:taupo-tama-lakes-umakarikari-e",
+      "dayId": "@key:xl:day:2026-12-25",
+      "stopId": null,
+      "title": "größere Wanderung",
+      "amount": 4,
+      "currency": "EUR",
+      "paidBy": "",
+      "splitBetween": [],
+      "note": "Campingplatz 4 Nächte: 150 Euro / 2 Personen"
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2026-12-26",
+      "date": "2026-12-26",
+      "title": "Turangi -> Glühwürmchen (2h 15 min) -> Glühwürmchentour (ca. 2 h insgesamt) -> Three sisters (1,5 h) -> Campingplatz freedom",
+      "times": "Feiertag",
+      "notes": "Glühwürmchentour müssen wir noch buchen",
+      "shower": {
+        "status": "nein",
+        "note": "nein"
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2026-12-26",
+      "dayId": "@key:xl:day:2026-12-26",
+      "order": 100,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Freedom Campingplatz direkt bei three sisters oder schon in richtung nationalpark",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "offen",
+      "camp": {
+        "type": "freedom"
+      }
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2026-12-27",
+      "date": "2026-12-27",
+      "title": "Three sisters -> Mongorei car park (1h 15 min) / Te Papa-Kura-o-Taranaki / New Plymouth",
+      "times": "",
+      "notes": "Fahrt dahin über forgotten world highway (landschaftlich sehr schön :)",
+      "shower": {
+        "status": "unklar",
+        "note": "?"
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2026-12-27",
+      "dayId": "@key:xl:day:2026-12-27",
+      "order": 0,
+      "scope": "day",
+      "kind": "hike",
+      "name": "Wanderung Henry peak runde von ... (22km, 1.200 hm, 8,5 h) -> Route nochmal checken, ob man dort überhaupt parken kann",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2026-12-27",
+      "dayId": "@key:xl:day:2026-12-27",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Freedom Campingplatz im  Nationalpark oder bezahlter in New Plymouth (mit Dusche)",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": "freedom"
+      }
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2026-12-28",
+      "date": "2026-12-28",
+      "title": "an der Westküste entlang nach Wellington (4h)",
+      "times": "",
+      "notes": "",
+      "shower": {
+        "status": "unklar",
+        "note": ""
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2026-12-28",
+      "dayId": "@key:xl:day:2026-12-28",
+      "order": 0,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Reisetag",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2026-12-28",
+      "dayId": "@key:xl:day:2026-12-28",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Freedom Campingplatz in Paraparaumu oder Porirua",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": "freedom"
+      }
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2026-12-29",
+      "date": "2026-12-29",
+      "title": "Picton -> Campingplatz (the barn cabins & camp) (3 h)",
+      "times": "Abfahrt Fähre Wellington 08:45 · Ankunft Fähre Picton 12:15",
+      "notes": "keine Deadline für check in :)",
+      "shower": {
+        "status": "ja",
+        "note": "Ja & powered campsite"
+      },
+      "facilities": {
+        "power": "ja",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:row:2026-12-29:abfahrt-fa-hre-wellington",
+      "dayId": "@key:xl:day:2026-12-29",
+      "order": 0,
+      "scope": "main",
+      "kind": "transport",
+      "name": "Abfahrt Fähre Wellington",
+      "notes": "",
+      "time": "08:45",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:row:2026-12-29:ankunft-fa-hre-picton",
+      "dayId": "@key:xl:day:2026-12-29",
+      "order": 1,
+      "scope": "main",
+      "kind": "transport",
+      "name": "Ankunft Fähre Picton",
+      "notes": "",
+      "time": "12:15",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2026-12-29",
+      "dayId": "@key:xl:day:2026-12-29",
+      "order": 2,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Evtl. noch zur Coquille bay laufen (48 min vom Campingplatz aus )",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2026-12-29",
+      "dayId": "@key:xl:day:2026-12-29",
+      "order": 103,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Abel Tasman Campingplatz gebucht (Theresa): The barn cabins & camp",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "gebucht",
+      "camp": {
+        "type": "holiday_park"
+      }
+    }
+  },
+  {
+    "type": "expense",
+    "data": {
+      "id": "",
+      "key": "xl:price:2026-12-29:picton-campingplatz-the-barn-c",
+      "dayId": "@key:xl:day:2026-12-29",
+      "stopId": null,
+      "title": "Evtl. noch zur Coquille bay laufen (48 min vom Campingplatz aus )",
+      "amount": 360,
+      "currency": "NZD",
+      "paidBy": "",
+      "splitBetween": [],
+      "note": "360 Dollar / 2 Personen"
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2026-12-30",
+      "date": "2026-12-30",
+      "title": "Coquille Bay Wanderung (Abel Tasman national park)",
+      "times": "",
+      "notes": "",
+      "shower": {
+        "status": "ja",
+        "note": "Ja & powered campsite"
+      },
+      "facilities": {
+        "power": "ja",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2026-12-30",
+      "dayId": "@key:xl:day:2026-12-30",
+      "order": 0,
+      "scope": "day",
+      "kind": "hike",
+      "name": "Wanderung: Blick auf die Coquille Bay (22 km, 380 hm, 6,5 h)",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2026-12-30",
+      "dayId": "@key:xl:day:2026-12-30",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Abel Tasman Campingplatz gebucht (Theresa): The barn cabins & camp",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "gebucht",
+      "camp": {
+        "type": "holiday_park"
+      }
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2026-12-31",
+      "date": "2026-12-31",
+      "title": "Abel - Tasman - Nationalpark -> Collingwood Campingplatz (1,5 h)",
+      "times": "SILVESTER",
+      "notes": "Check in bis 20:00 max",
+      "shower": {
+        "status": "ja",
+        "note": "Ja & powered campsite"
+      },
+      "facilities": {
+        "power": "ja",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2026-12-31",
+      "dayId": "@key:xl:day:2026-12-31",
+      "order": 0,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Fahrt zu einer weiteren Bucht (WASSER-TAXIS)",
+      "notes": "(Sarah war an der Bark Bay)\n\ndanach Weiterfahrt zum Collingwood Holiday park Campingplatz",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2026-12-31",
+      "dayId": "@key:xl:day:2026-12-31",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Collingwood Campingplatz gebucht (Theresa)",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "gebucht",
+      "camp": {
+        "type": "holiday_park"
+      }
+    }
+  },
+  {
+    "type": "expense",
+    "data": {
+      "id": "",
+      "key": "xl:price:2026-12-31:abel-tasman-nationalpark-colli",
+      "dayId": "@key:xl:day:2026-12-31",
+      "stopId": null,
+      "title": "Fahrt zu einer weiteren Bucht (WASSER-TAXIS) / (Sarah war an der Bark Bay) / danach Weiterfahrt zum Collingwood Holiday park Campingplatz",
+      "amount": 40,
+      "currency": "EUR",
+      "paidBy": "",
+      "splitBetween": [],
+      "note": "40 Euro / 2 Personen"
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-01",
+      "date": "2027-01-01",
+      "title": "Collingwood -> Wharariki beach (30 min) -> (ca. 3,5 h Fahrt ) Nähe Murchison",
+      "times": "Feiertag",
+      "notes": "riverside holiday park --> hat eigentlich immer platz bei non-powered",
+      "shower": {
+        "status": "nein",
+        "note": "nein"
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2027-01-01",
+      "dayId": "@key:xl:day:2027-01-01",
+      "order": 0,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Strand genießen; dann los in Richtung Murchison",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2027-01-01",
+      "dayId": "@key:xl:day:2027-01-01",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Campingplatz Murchison (2 Campingplätze) Favorit: Riverside Holliday Park",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": ""
+      }
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-02",
+      "date": "2027-01-02",
+      "title": "Murchison -> Westküste (Irimahuwhero Lookout, Punakaiki Beach & Pancace rocks, Motokuiki Beach Walk) -> Greymouth (insgesamt 2,75 h Fahrt)",
+      "times": "",
+      "notes": "",
+      "shower": {
+        "status": "nein",
+        "note": "nein"
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2027-01-02",
+      "dayId": "@key:xl:day:2027-01-02",
+      "order": 0,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Programm Westküste ?",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2027-01-02",
+      "dayId": "@key:xl:day:2027-01-02",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Campingplätze Greymouth:",
+      "notes": "* freedom: Gobden Beachfront (sehr schön)",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": "freedom"
+      }
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-03",
+      "date": "2027-01-03",
+      "title": "Greymouth strand genießen -> Arthurtś Pass -> mount somers holiday park (oder anderer campspot auf dem Weg)(insgesamt 3,5 h Fahrt)",
+      "times": "",
+      "notes": "noch nicht gebucht ! machen wir spontan, je nachdem wie weit wir fahren",
+      "shower": {
+        "status": "ja",
+        "note": "Ja & powered campsite"
+      },
+      "facilities": {
+        "power": "ja",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2027-01-03",
+      "dayId": "@key:xl:day:2027-01-03",
+      "order": 0,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Morgens noch Westküste genießen, dann über den Arthurś Pass",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2027-01-03",
+      "dayId": "@key:xl:day:2027-01-03",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "z.B. Mount Somers Holiday Park",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": "holiday_park"
+      }
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-04",
+      "date": "2027-01-04",
+      "title": "Mount Somers -> lake tekapo -> lake pukaki overnight campervan parking (2,5 h)",
+      "times": "",
+      "notes": "Früh da sein, sonst gibt es keine Plätze mehr!",
+      "shower": {
+        "status": "nein",
+        "note": "nein"
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2027-01-04",
+      "dayId": "@key:xl:day:2027-01-04",
+      "order": 0,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Lake Tekapo & Lake Pukaki erkunden & Reisetag",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2027-01-04",
+      "dayId": "@key:xl:day:2027-01-04",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Freedom campingplatz direkt campingplatz am See",
+      "notes": "lake pukaki  overnight campervan parking (Campingplatz)",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": "freedom"
+      }
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-05",
+      "date": "2027-01-05",
+      "title": "Lake Pukaki -> Parkplatz Aoraki Mt. Cook (1h ) -> Wanderung (ca. 5h) -> Fahrt in Richtung Wanaka (2,5 h)",
+      "times": "",
+      "notes": "",
+      "shower": {
+        "status": "nein",
+        "note": "nein"
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2027-01-05",
+      "dayId": "@key:xl:day:2027-01-05",
+      "order": 0,
+      "scope": "day",
+      "kind": "hike",
+      "name": "Wanderung: Hooker Valley Track angepasst (4h 45 min, 11,2 km, 640 hm)",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [
+        "https://www.komoot.com/de-de/tour/3384559265?share_token=aV3OcFisiRPJatu4G9aHtHu55RYZq0woVYt7lgUIr1CGB9QMZX&ref=wtd&t_s=referral&t_cid=route_share&t_ref_username=3298652191339"
+      ],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2027-01-05",
+      "dayId": "@key:xl:day:2027-01-05",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Lindis Pass Historic Hotel (First come first serve)",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": "hotel"
+      }
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-06",
+      "date": "2027-01-06",
+      "title": "Lindis pass historic hotel -> wanaka Wanderparkplatz (1h ) -> Wanderung (5,5 h)-> Fahrt nach Arrowtown (1 h)",
+      "times": "",
+      "notes": "Kostenlose stornierung nur bis 15 Tage vorher mgl. (Storno 25€)",
+      "shower": {
+        "status": "ja",
+        "note": "Ja & powered campsite"
+      },
+      "facilities": {
+        "power": "ja",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2027-01-06",
+      "dayId": "@key:xl:day:2027-01-06",
+      "order": 0,
+      "scope": "day",
+      "kind": "hike",
+      "name": "Wanderung: Roys Peak Track (15 km; 1.200 hm; 5,5 h)",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [
+        "https://www.komoot.com/de-de/tour/2702315189?share_token=ap1u6E5nMnrzXzWpiuZ6Y2NyIvGf47WsAlx24P65BstO0YocIN&ref=wtd&t_s=referral&t_cid=route_share&t_ref_username=3298652191339"
+      ],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2027-01-06",
+      "dayId": "@key:xl:day:2027-01-06",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Hampshire Holiday Parks - Arrowtown",
+      "notes": "(gebucht: Jonas)",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "gebucht",
+      "camp": {
+        "type": "holiday_park"
+      }
+    }
+  },
+  {
+    "type": "expense",
+    "data": {
+      "id": "",
+      "key": "xl:price:2027-01-06:lindis-pass-historic-hotel-wan",
+      "dayId": "@key:xl:day:2027-01-06",
+      "stopId": null,
+      "title": "Wanderung: Roys Peak Track (15 km; 1.200 hm; 5,5 h)",
+      "amount": 38,
+      "currency": "EUR",
+      "paidBy": "",
+      "splitBetween": [],
+      "note": "38 Euro / 2 Personen"
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-07",
+      "date": "2027-01-07",
+      "title": "Arrowtown -> Lake Hayes (Spaziergang 2 h) -> Fahrt nach Te Anau (2 h 15 min)",
+      "times": "",
+      "notes": "Kostenlose Stornierung bis 2 Tage vorher",
+      "shower": {
+        "status": "ja",
+        "note": "Ja & powered campsite"
+      },
+      "facilities": {
+        "power": "ja",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2027-01-07",
+      "dayId": "@key:xl:day:2027-01-07",
+      "order": 0,
+      "scope": "day",
+      "kind": "hike",
+      "name": "Wanderung:  Blick auf den Hayes-See (9km, 80 hm, 2h)",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [
+        "https://www.komoot.com/de-de/tour/3244452638?share_token=aD6tUy1fV9RAdd5VhdPg8hP8KVpkpbgIme2zL7BYjAVpUn2ulB&ref=wtd&t_s=referral&t_cid=route_share&t_ref_username=3298652191339"
+      ],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2027-01-07",
+      "dayId": "@key:xl:day:2027-01-07",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Te Anau Lakeview holiday park (Sarah)",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": "holiday_park"
+      }
+    }
+  },
+  {
+    "type": "expense",
+    "data": {
+      "id": "",
+      "key": "xl:price:2027-01-07:arrowtown-lake-hayes-spazierga",
+      "dayId": "@key:xl:day:2027-01-07",
+      "stopId": null,
+      "title": "Wanderung:  Blick auf den Hayes-See (9km, 80 hm, 2h)",
+      "amount": 157,
+      "currency": "NZD",
+      "paidBy": "",
+      "splitBetween": [],
+      "note": "157 Dollar / 2 Personen / 2 Nächte"
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-08",
+      "date": "2027-01-08",
+      "title": "Te Anau (Restday)",
+      "times": "",
+      "notes": "Kostenlose Stornierung bis 2 Tage vorher",
+      "shower": {
+        "status": "ja",
+        "note": "Ja & powered campsite"
+      },
+      "facilities": {
+        "power": "ja",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2027-01-08",
+      "dayId": "@key:xl:day:2027-01-08",
+      "order": 0,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Restday",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2027-01-08",
+      "dayId": "@key:xl:day:2027-01-08",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Te Anau Lakeview holiday park (Sarah)",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": "holiday_park"
+      }
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-09",
+      "date": "2027-01-09",
+      "title": "Te Anau -> Key summit trail & Lake Marian (1h) -> milford sound (50 min)",
+      "times": "",
+      "notes": "Naturschutzgebiet -> sollten wir einen Campingplatz buchen\n\nMilford sound sollte man vorab buchen (kein Netz in Milford sound)\n\nNaturschutzgebiet -> sollten wir einen Campingplatz buchen\n\nMilford sound sollte man vorab buchen (kein Netz in Milford sound)",
+      "shower": {
+        "status": "unklar",
+        "note": ""
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2027-01-09",
+      "dayId": "@key:xl:day:2027-01-09",
+      "order": 0,
+      "scope": "day",
+      "kind": "hike",
+      "name": "Wanderung 1: Blick auf das Hollyford... (7km, 400 hm, 2,5 h)",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [
+        "https://www.komoot.com/de-de/tour/3244465058?share_token=aIlR0rRdniLZigshnXOzZi7cfVe3zvlHgndYjkk7NMdfvZZqgG&ref=wtd&t_s=referral&t_cid=route_share&t_ref_username=3298652191339"
+      ],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2027-01-09",
+      "dayId": "@key:xl:day:2027-01-09",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Cascade Creek Campsite",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "offen",
+      "camp": {
+        "type": ""
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2027-01-09:2",
+      "dayId": "@key:xl:day:2027-01-09",
+      "order": 2,
+      "scope": "day",
+      "kind": "hike",
+      "name": "Wanderung 2: Lake Marian (6 km, 400hm, 2h 44min)",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [
+        "https://www.komoot.com/de-de/tour/3255056099?share_token=a7wi5HjhGkv8b1kr0ua9QVPmEcCqumR7Vq3L2sK7hIGb9RQWkm&ref=wtd&t_s=referral&t_cid=route_share&t_ref_username=3298652191339"
+      ],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2027-01-09:2",
+      "dayId": "@key:xl:day:2027-01-09",
+      "order": 103,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Cascade Creek Campsite",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "offen",
+      "camp": {
+        "type": ""
+      }
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-10",
+      "date": "2027-01-10",
+      "title": "Milford Sound reinfahren",
+      "times": "",
+      "notes": "hooker trail -> Wanderung noch raussuchen\nkönnte überlaufen sein",
+      "shower": {
+        "status": "unklar",
+        "note": ""
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2027-01-10",
+      "dayId": "@key:xl:day:2027-01-10",
+      "order": 0,
+      "scope": "day",
+      "kind": "hike",
+      "name": "Wanderung: Giants-Gate (10,5 km; 110 hm; ca 3 h)",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [
+        "https://www.komoot.com/de-de/tour/3384858641?share_token=ajet3ThOhOc2JNHUJVriu1rY50DLi13xJDVd8HDYcLzNyichP6&ref=wtd&t_s=referral&t_cid=route_share&t_ref_username=3298652191339"
+      ],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2027-01-10",
+      "dayId": "@key:xl:day:2027-01-10",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Cascade Creek Campsite",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": ""
+      }
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-11",
+      "date": "2027-01-11",
+      "title": "Cascade Creek -> Queenstown Freedom Campsite (3 h)",
+      "times": "",
+      "notes": "Kostenlose stornierung nur bis 15 Tage vorher mgl. (Storno 25€)",
+      "shower": {
+        "status": "ja",
+        "note": "Ja & powered campsite"
+      },
+      "facilities": {
+        "power": "ja",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2027-01-11",
+      "dayId": "@key:xl:day:2027-01-11",
+      "order": 0,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Reisetag + Queenstown",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2027-01-11",
+      "dayId": "@key:xl:day:2027-01-11",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Hampshire Holiday Parks - Queenstown",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": "holiday_park"
+      }
+    }
+  },
+  {
+    "type": "expense",
+    "data": {
+      "id": "",
+      "key": "xl:price:2027-01-11:cascade-creek-queenstown-freed",
+      "dayId": "@key:xl:day:2027-01-11",
+      "stopId": null,
+      "title": "Reisetag + Queenstown",
+      "amount": 130,
+      "currency": "NZD",
+      "paidBy": "",
+      "splitBetween": [],
+      "note": "130 Dollar / 2 Personen / 2 Nächte"
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-12",
+      "date": "2027-01-12",
+      "title": "Queenstown",
+      "times": "",
+      "notes": "Kostenlose stornierung nur bis 15 Tage vorher mgl. (Storno 25€)",
+      "shower": {
+        "status": "ja",
+        "note": "Ja & powered campsite"
+      },
+      "facilities": {
+        "power": "ja",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2027-01-12",
+      "dayId": "@key:xl:day:2027-01-12",
+      "order": 0,
+      "scope": "day",
+      "kind": "hike",
+      "name": "Wanderung: Ben-Lomond-Sattel (16km; 1.500 hm; 8,5 h)",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [
+        "https://www.komoot.com/de-de/tour/3384693423?share_token=am93FQUSRWktNEUaCbC7hiFRapF8iOLfJGby0QKhWhKr5lXYWN&ref=wtd&t_s=referral&t_cid=route_share&t_ref_username=3298652191339"
+      ],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2027-01-12",
+      "dayId": "@key:xl:day:2027-01-12",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Hampshire Holiday Parks - Queenstown",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": "holiday_park"
+      }
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-13",
+      "date": "2027-01-13",
+      "title": "queenstown -> Warrington (3,5 h)",
+      "times": "",
+      "notes": "",
+      "shower": {
+        "status": "nein",
+        "note": "nein"
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2027-01-13",
+      "dayId": "@key:xl:day:2027-01-13",
+      "order": 0,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Strand",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2027-01-13",
+      "dayId": "@key:xl:day:2027-01-13",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Warrington Reserve (self contained)",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": ""
+      }
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-14",
+      "date": "2027-01-14",
+      "title": "Warrington -> Akaroa (5 h)",
+      "times": "",
+      "notes": "",
+      "shower": {
+        "status": "nein",
+        "note": "nein"
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2027-01-14",
+      "dayId": "@key:xl:day:2027-01-14",
+      "order": 0,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Reisetag",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2027-01-14",
+      "dayId": "@key:xl:day:2027-01-14",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "Freedom Campingplatz",
+      "notes": "Okains Bay: \nDOC Campground in Okains Bay -",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": "doc"
+      }
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-15",
+      "date": "2027-01-15",
+      "title": "Akaroa (Delfintour bis ca. 13:00); Nachmittag in Akaroa -> Fahrt zum Campingplatu in Christchurch (1,5 h)",
+      "times": "",
+      "notes": "Delfintour (Akaroa Dolphins):\nCheck-in: 9:30",
+      "shower": {
+        "status": "ja",
+        "note": "Ja & powered campsite"
+      },
+      "facilities": {
+        "power": "ja",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2027-01-15",
+      "dayId": "@key:xl:day:2027-01-15",
+      "order": 0,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Delfintour in Akaroa;",
+      "notes": "> Restlicher Tag in Akaroa \n-> Fahrt an Campingplatz in Christuchurch",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:camp:2027-01-15",
+      "dayId": "@key:xl:day:2027-01-15",
+      "order": 101,
+      "scope": "main",
+      "kind": "campsite",
+      "name": "South Brighton Holiday park",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "camp": {
+        "type": "holiday_park"
+      }
+    }
+  },
+  {
+    "type": "expense",
+    "data": {
+      "id": "",
+      "key": "xl:price:2027-01-15:akaroa-delfintour-bis-ca-13-00",
+      "dayId": "@key:xl:day:2027-01-15",
+      "stopId": null,
+      "title": "Delfintour in Akaroa; / > Restlicher Tag in Akaroa / -> Fahrt an Campingplatz in Christuchurch",
+      "amount": 280,
+      "currency": "NZD",
+      "paidBy": "",
+      "splitBetween": [],
+      "note": "280 Dollar / 2 Personen\n\nCampsite: 55 Dollar / 2 Personen"
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-16",
+      "date": "2027-01-16",
+      "title": "Rückgabe Camper Christchurch",
+      "times": "16:00",
+      "notes": "Gepäck schon vorher an die Unterkunft bringen, bevor wir den Camper abgeben!\n\nCheck in ab 14:00 bis 23:30\nGebucht über Booking (Theresa)",
+      "shower": {
+        "status": "unklar",
+        "note": ""
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2027-01-16",
+      "dayId": "@key:xl:day:2027-01-16",
+      "order": 0,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Strandtag bis Mittag, Camper fertig machen; Gepäck an die Unterkunft bringen  -> dann ca. 30 min nach Christchurch zur Camperrückgabe",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2027-01-16:2",
+      "dayId": "@key:xl:day:2027-01-16",
+      "order": 1,
+      "scope": "day",
+      "kind": "activity",
+      "name": "✓ Check-in von 14:00 bis 23:30",
+      "notes": "✓ Check-out bis 10:00",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "expense",
+    "data": {
+      "id": "",
+      "key": "xl:price:2027-01-16:unterkunft-christchurch-bed-br",
+      "dayId": "@key:xl:day:2027-01-16",
+      "stopId": null,
+      "title": "✓ Check-in von 14:00 bis 23:30 / ✓ Check-out bis 10:00",
+      "amount": 95,
+      "currency": "EUR",
+      "paidBy": "",
+      "splitBetween": [],
+      "note": "95"
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-17",
+      "date": "2027-01-17",
+      "title": "Rückflug ab Christchurch",
+      "times": "Rückflug ab Christchurch 17:20 · Ankunft in Singapur 22:55",
+      "notes": "Transfer zum Hotel Taxi (nachts keine Öffis mehr; max. 50 Dollar)",
+      "shower": {
+        "status": "unklar",
+        "note": ""
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:row:2027-01-17:ru-ckflug-ab-christchurch",
+      "dayId": "@key:xl:day:2027-01-17",
+      "order": 0,
+      "scope": "main",
+      "kind": "transport",
+      "name": "Rückflug ab Christchurch",
+      "notes": "",
+      "time": "17:20",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:row:2027-01-17:ankunft-in-singapur",
+      "dayId": "@key:xl:day:2027-01-17",
+      "order": 1,
+      "scope": "main",
+      "kind": "transport",
+      "name": "Ankunft in Singapur",
+      "notes": "",
+      "time": "22:55",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-18",
+      "date": "2027-01-18",
+      "title": "SINGAPUR / (Hotel Mi Rochor)",
+      "times": "",
+      "notes": "Check in 24/7",
+      "shower": {
+        "status": "unklar",
+        "note": ""
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:act:2027-01-18",
+      "dayId": "@key:xl:day:2027-01-18",
+      "order": 0,
+      "scope": "day",
+      "kind": "activity",
+      "name": "Lichtershow an der Marina Bay SAnds (20:00 und 21:00) -> Empfehlung Jakob & Berni",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "expense",
+    "data": {
+      "id": "",
+      "key": "xl:price:2027-01-18:singapur-hotel-mi-rochor",
+      "dayId": "@key:xl:day:2027-01-18",
+      "stopId": null,
+      "title": "Lichtershow an der Marina Bay SAnds (20:00 und 21:00) -> Empfehlung Jakob & Berni",
+      "amount": 321,
+      "currency": "EUR",
+      "paidBy": "",
+      "splitBetween": [],
+      "note": "321"
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-19",
+      "date": "2027-01-19",
+      "title": "SINGAPUR",
+      "times": "",
+      "notes": "",
+      "shower": {
+        "status": "unklar",
+        "note": ""
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:row:2027-01-19:singapur",
+      "dayId": "@key:xl:day:2027-01-19",
+      "order": 0,
+      "scope": "main",
+      "kind": "transport",
+      "name": "SINGAPUR",
+      "notes": "",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "day",
+    "data": {
+      "id": "",
+      "key": "xl:day:2027-01-20",
+      "date": "2027-01-20",
+      "title": "Rückflug ab Singapur",
+      "times": "Rückflug ab Singapur 12:55 · Ankunft in MUC 19:10",
+      "notes": "",
+      "shower": {
+        "status": "unklar",
+        "note": ""
+      },
+      "facilities": {
+        "power": "unklar",
+        "water": "unklar",
+        "dump": "unklar"
+      }
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:row:2027-01-20:ru-ckflug-ab-singapur",
+      "dayId": "@key:xl:day:2027-01-20",
+      "order": 0,
+      "scope": "main",
+      "kind": "transport",
+      "name": "Rückflug ab Singapur",
+      "notes": "",
+      "time": "12:55",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:row:2027-01-20:ankunft-in-muc",
+      "dayId": "@key:xl:day:2027-01-20",
+      "order": 1,
+      "scope": "main",
+      "kind": "transport",
+      "name": "Ankunft in MUC",
+      "notes": "",
+      "time": "19:10",
+      "duration": "",
+      "links": [],
+      "booking": ""
+    }
+  }
+]

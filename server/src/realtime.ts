@@ -74,6 +74,10 @@ export function attachRealtime(server: Server): void {
     }
   });
 
+  events.on('database-restored', () => {
+    for (const client of clients) client.ws.close(1012, 'database restored');
+  });
+
   // Keep-alive (Tailscale/Proxies schließen sonst inaktive Verbindungen)
   setInterval(() => {
     for (const c of clients) if (c.ws.readyState === c.ws.OPEN) c.ws.ping();

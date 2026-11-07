@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Trash } from 'lucide-react';
+import { Download, Trash, Upload } from 'lucide-react';
 import type { Role, User } from '@neugier/shared';
 import { ROLE_LABEL } from '@neugier/shared';
 import { api } from '../api';
 import { useStore } from '../store';
 
 interface Settings {
+  llmProvider: 'copilot' | 'openai';
   llmBaseUrl: string;
   llmModel: string;
   llmApiKeySet: boolean;
-  webSearch: 'off' | 'tavily' | 'native';
+  webSearch: 'off' | 'on' | 'tavily' | 'native';
   searchApiKeySet: boolean;
 }
 
@@ -20,6 +21,7 @@ export function Admin() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [apiKey, setApiKey] = useState('');
   const [searchKey, setSearchKey] = useState('');
+  const [backupBusy, setBackupBusy] = useState(false);
 
   const load = () => {
     api<User[]>('/admin/users').then(setUsers);
@@ -43,6 +45,7 @@ export function Admin() {
     await api('/admin/settings', {
       method: 'PUT',
       body: {
+        llmProvider: settings!.llmProvider,
         llmBaseUrl: settings!.llmBaseUrl,
         llmModel: settings!.llmModel,
         llmApiKey: apiKey || undefined,
@@ -58,6 +61,20 @@ export function Admin() {
   };
 
   const pending = users.filter((u) => u.role === 'pending');
+
+  const restoreBackup = async (file: File) => {
+    if (!confirm('Die gesamte Datenbank einschließlich Nutzer und Einstellungen wird ersetzt. Vorher sichern und ausstehende Offline-Änderungen aller Geräte synchronisieren. Fortfahren?')) return;
+    setBackupBusy(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      await api('/admin/backup/restore', { form });
+      window.location.reload();
+    } catch (error) {
+      toast((error as Error).message);
+      setBackupBusy(false);
+    }
+  };
 
   return (
     <div className="page">
@@ -110,34 +127,74 @@ export function Admin() {
         ))}
       </div>
 
+      <div className="card stack">
+        <h3>Datenbank-Backup</h3>
+        <p className="small muted">Enthält auch Nutzer, Sitzungen und API-Schlüssel. Fotos und andere hochgeladene Dateien sind nicht enthalten.</p>
+        <div className="row wrap">
+          <a className="btn" href="/api/admin/backup" download><Download size={16} /> Backup herunterladen</a>
+          <label className="btn file">
+            <Upload size={16} /> {backupBusy ? 'Wiederherstellung …' : 'Backup wiederherstellen'}
+            <input type="file" accept=".db,.sqlite,.sqlite3" hidden disabled={backupBusy} onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = '';
+              if (file) void restoreBackup(file);
+            }} />
+          </label>
+        </div>
+      </div>
+
       {settings && (
         <div className="card stack">
           <h3>KI-Assistent</h3>
-          <p className="small muted">
-            OpenAI-kompatible API. Für GitHub Copilot / GitHub Models: Basis-URL <code>https://models.github.ai/inference</code>, Modell z. B.{' '}
-            <code>openai/gpt-4.1</code>, API-Key = GitHub Personal Access Token mit Berechtigung „models:read".
-          </p>
           <label>
-            Basis-URL
-            <input value={settings.llmBaseUrl} onChange={(e) => setSettings({ ...settings, llmBaseUrl: e.target.value })} />
+            Anbieter
+            <select value={settings.llmProvider} onChange={(e) => {
+              const llmProvider = e.target.value as Settings['llmProvider'];
+              setSettings({ ...settings, llmProvider, llmModel: llmProvider === 'copilot' ? 'auto' : 'gpt-4o-mini', webSearch: settings.webSearch === 'off' ? 'off' : llmProvider === 'copilot' ? 'on' : 'tavily' });
+            }}>
+              <option value="copilot">GitHub Copilot (Copilot-Abo, eingebaute Websuche)</option>
+              <option value="openai">OpenAI-kompatible API (OpenAI, Azure AI Foundry, Ollama …)</option>
+            </select>
           </label>
+          {settings.llmProvider === 'copilot' ? (
+            <p className="small muted">
+              API-Key = GitHub <strong>Fine-grained Personal Access Token</strong> mit der Berechtigung „Copilot Requests“. Modell z. B. <code>auto</code>,{' '}
+              <code>gpt-5</code> oder <code>claude-sonnet-4.5</code>.
+            </p>
+          ) : (
+            <label>
+              Basis-URL
+              <input value={settings.llmBaseUrl} onChange={(e) => setSettings({ ...settings, llmBaseUrl: e.target.value })} />
+            </label>
+          )}
           <label>
             Modell
             <input value={settings.llmModel} onChange={(e) => setSettings({ ...settings, llmModel: e.target.value })} />
           </label>
           <label>
-            API-Key {settings.llmApiKeySet && <span className="badge green">hinterlegt</span>}
-            <input type="password" placeholder={settings.llmApiKeySet ? '•••••• (leer lassen = unverändert)' : 'API-Key'} value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
+            {settings.llmProvider === 'copilot' ? 'GitHub-Token' : 'API-Key'} {settings.llmApiKeySet && <span className="badge green">hinterlegt</span>}
+            <input
+              type="password"
+              placeholder={settings.llmApiKeySet ? '•••••• (leer lassen = unverändert)' : settings.llmProvider === 'copilot' ? 'github_pat_…' : 'API-Key'}
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+            />
           </label>
           <label>
             Websuche
             <select value={settings.webSearch} onChange={(e) => setSettings({ ...settings, webSearch: e.target.value as Settings['webSearch'] })}>
               <option value="off">Aus</option>
-              <option value="tavily">Tavily (funktioniert mit jedem Modell, z. B. GitHub Models)</option>
-              <option value="native">Native Websuche des Modells (z. B. OpenAI gpt-4o-search-preview)</option>
+              {settings.llmProvider === 'copilot' ? (
+                <option value="on">An (Copilot web_search + web_fetch)</option>
+              ) : (
+                <>
+                  <option value="tavily">Tavily (funktioniert mit jedem Modell mit Tool-Calling)</option>
+                  <option value="native">Native Websuche des Modells (z. B. OpenAI gpt-4o-search-preview)</option>
+                </>
+              )}
             </select>
           </label>
-          {settings.webSearch === 'tavily' && (
+          {settings.llmProvider === 'openai' && settings.webSearch === 'tavily' && (
             <label>
               Tavily API-Key {settings.searchApiKeySet && <span className="badge green">hinterlegt</span>}
               <input

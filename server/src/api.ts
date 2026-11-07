@@ -1,19 +1,23 @@
+import fs from 'node:fs';
 import path from 'node:path';
+import { backup } from 'node:sqlite';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import multer from 'multer';
 import type { AnyEntity, ChatMessage, Op, Role, Trip, TripExport, TripState, TypedEntity } from '@neugier/shared';
 import { canSeePlanning, newId } from '@neugier/shared';
 import { attachUser, deleteUser, listUsers, loginDev, loginGoogle, logout, requireRole, setRole } from './auth';
+import { restoreDatabase, temporaryBackupPath } from './backup';
 import { config, uploadsDir } from './config';
-import { setSetting } from './db';
+import { db, setSetting } from './db';
 import { toJson, toSplidCsv, toSplidText } from './exporters';
 import { parseExcel } from './importers/excel';
 import { chat, llmSettings } from './llm';
 import { computeRoute, geocodeMissing, searchPlaces } from './maps';
 import { buildMergeOps, fromExport, planMerge, type Resolution } from './merge';
-import { applyOps, getState, listChanges, listTrips, restoreVersion, rollbackBatch } from './store';
+import { applyOps, events, getState, listChanges, listTrips, restoreVersion, rollbackBatch } from './store';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 30 * 1024 * 1024 } });
+const backupUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
 const photoUpload = multer({
   storage: multer.diskStorage({
     destination: uploadsDir,
@@ -24,10 +28,10 @@ const photoUpload = multer({
 
 /** Async-Handler-Wrapper: Fehler als JSON zurückgeben. */
 const h =
-  (fn: (req: Request, res: Response) => unknown) =>
+  (fn: (req: Request, res: Response, next: NextFunction) => unknown) =>
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      await fn(req, res);
+      await fn(req, res, next);
     } catch (e) {
       next(e);
     }
@@ -67,6 +71,7 @@ function stateFor(req: Request) {
 
 /** Ausstehende Imports (Datei geparst, wartet auf Konfliktlösung). */
 const pendingImports = new Map<string, { tripId: string; source: string; entities: TypedEntity[] }>();
+let restoringBackup = false;
 
 export function api(): express.Router {
   const r = express.Router();
@@ -91,6 +96,36 @@ export function api(): express.Router {
   r.post('/auth/logout', logout);
 
   // --- Admin ---
+  r.get('/admin/backup', requireRole('admin'), h(async (_req, res, next) => {
+    const temp = temporaryBackupPath();
+    try {
+      await backup(db, temp.file);
+      res.setHeader('Cache-Control', 'no-store');
+      res.download(temp.file, `neugier-backup-${new Date().toISOString().slice(0, 10)}.db`, (error) => {
+        fs.rmSync(temp.directory, { recursive: true, force: true });
+        if (error && !res.headersSent) next(error);
+      });
+    } catch (error) {
+      fs.rmSync(temp.directory, { recursive: true, force: true });
+      throw error;
+    }
+  }));
+  r.post('/admin/backup/restore', requireRole('admin'), backupUpload.single('file'), h(async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'Keine Sicherungsdatei' });
+    if (restoringBackup) return res.status(409).json({ error: 'Wiederherstellung läuft bereits' });
+    const temp = temporaryBackupPath();
+    restoringBackup = true;
+    try {
+      fs.writeFileSync(temp.file, req.file.buffer, { mode: 0o600 });
+      await restoreDatabase(temp.file, path.join(config.dataDir, 'neugier.db'), db);
+      pendingImports.clear();
+      events.emit('database-restored');
+      res.json({ ok: true });
+    } finally {
+      fs.rmSync(temp.directory, { recursive: true, force: true });
+      restoringBackup = false;
+    }
+  }));
   r.get('/admin/users', requireRole('admin'), (_req, res) => res.json(listUsers()));
   r.put('/admin/users/:id', requireRole('admin'), (req, res) => {
     const role = req.body.role as Role;
@@ -106,6 +141,7 @@ export function api(): express.Router {
   r.get('/admin/settings', requireRole('admin'), (_req, res) => {
     const s = llmSettings();
     res.json({
+      llmProvider: s.provider,
       llmBaseUrl: s.baseUrl,
       llmModel: s.model,
       llmApiKeySet: !!s.apiKey,
@@ -114,7 +150,8 @@ export function api(): express.Router {
     });
   });
   r.put('/admin/settings', requireRole('admin'), (req, res) => {
-    const { llmBaseUrl, llmModel, llmApiKey, webSearch, searchApiKey } = req.body as Record<string, string | boolean | undefined>;
+    const { llmProvider, llmBaseUrl, llmModel, llmApiKey, webSearch, searchApiKey } = req.body as Record<string, string | boolean | undefined>;
+    if (llmProvider === 'copilot' || llmProvider === 'openai') setSetting('llm.provider', llmProvider);
     if (typeof llmBaseUrl === 'string') setSetting('llm.baseUrl', llmBaseUrl);
     if (typeof llmModel === 'string') setSetting('llm.model', llmModel);
     if (typeof llmApiKey === 'string' && llmApiKey) setSetting('llm.apiKey', llmApiKey);

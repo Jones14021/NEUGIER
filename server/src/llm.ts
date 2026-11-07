@@ -1,19 +1,24 @@
 import type { ChatMessage, ChatResponse, ProposedChange, TripState } from '@neugier/shared';
 import { dayStops, fmtDate, sortedDays, todayIso } from '@neugier/shared';
 import { config } from './config';
+import { askCopilot } from './copilot';
 import { getSetting } from './db';
 
+export type LlmProvider = 'copilot' | 'openai';
+
 export function llmSettings() {
-  const mode = getSetting('llm.webSearch') || config.llm.webSearch;
+  const provider = (getSetting('llm.provider') || config.llm.provider) as LlmProvider;
+  const mode = (getSetting('llm.webSearch') || config.llm.webSearch) as 'off' | 'on' | 'tavily' | 'native';
+  const searchApiKey = getSetting('search.apiKey') || config.tavilyApiKey;
   return {
+    provider,
     baseUrl: getSetting('llm.baseUrl') || config.llm.baseUrl,
     model: getSetting('llm.model') || config.llm.model,
     apiKey: getSetting('llm.apiKey') || config.llm.apiKey,
-    webSearchMode: mode as 'off' | 'tavily' | 'native',
-    searchApiKey: getSetting('search.apiKey') || config.tavilyApiKey,
-    get webSearch(): boolean {
-      return mode === 'native' || (mode === 'tavily' && !!this.searchApiKey);
-    },
+    webSearchMode: mode,
+    searchApiKey,
+    // Copilot: jeder Modus außer "off" nutzt die eingebaute Websuche
+    webSearch: provider === 'copilot' ? mode !== 'off' : mode === 'native' || (mode === 'tavily' && !!searchApiKey),
   };
 }
 
@@ -120,6 +125,21 @@ async function complete(s: ReturnType<typeof llmSettings>, body: Record<string, 
 export async function chat(state: TripState, messages: ChatMessage[], focusDayId?: string, mode?: 'review'): Promise<ChatResponse> {
   const s = llmSettings();
   if (!s.apiKey) throw new Error('Kein API-Key für den KI-Assistenten hinterlegt (Admin → Einstellungen).');
+
+  if (s.provider === 'copilot') {
+    const useSearch = s.webSearchMode !== 'off';
+    const system = [SYSTEM, useSearch ? SEARCH_HINT.replace('"web_search"', '"web_search" (und "web_fetch" zum Lesen von Seiten)') : '', tripContext(state, focusDayId), mode === 'review' ? REVIEW_PROMPT : '']
+      .filter(Boolean)
+      .join('\n\n');
+    // Copilot-Sessions sind zustandslos pro Anfrage: Verlauf als Transkript mitgeben
+    const transcript = messages
+      .slice(-20)
+      .map((m) => `${m.role === 'user' ? 'Nutzer' : 'Assistent'}: ${m.content}`)
+      .join('\n\n');
+    const res = await askCopilot({ token: s.apiKey, model: s.model, system, prompt: transcript, webSearch: useSearch });
+    return { ...extractProposal(res.content, state), sources: dedupe(res.sources) };
+  }
+
   const useTavily = s.webSearchMode === 'tavily' && !!s.searchApiKey;
   const useNative = s.webSearchMode === 'native';
 

@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "tsx watch --clear-screen=false src/index.ts",
     "start": "tsx src/index.ts",
+    "test": "node --import tsx --test src/*.test.ts src/importers/*.test.ts",
     "typecheck": "tsc -p ."
   },
   "dependencies": {
+    "@github/copilot-sdk": "^1.0.29",
     "@neugier/shared": "*",
     "exceljs": "^4.4.0",
     "express": "^5.3.0",

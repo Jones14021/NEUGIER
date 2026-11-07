@@ -5,7 +5,7 @@ Selbst gehosteter Reisehelfer für Routenplanung vor und während der Reise: Ges
 Tagesansicht mit allen Stopps und Navigation per Google Maps, Live-Zusammenarbeit, Versionshistorie, KI-Assistent mit
 Routen-Diff, Ausgaben (Splid-Export), Erinnerungen und Excel-Import mit Merge.
 
-Architektur: [docs/ARCHITEKTUR.md](docs/ARCHITEKTUR.md)
+Architektur: [docs/ARCHITEKTUR.md](docs/ARCHITEKTUR.md) · Einrichtung und API-Keys: [docs/ENTWICKLER.md](docs/ENTWICKLER.md)
 
 ## Schnellstart (lokal, Docker)
 
@@ -37,6 +37,8 @@ sudo tailscale serve --bg 8080
 Die App ist dann unter `https://<host>.<tailnet>.ts.net` erreichbar. Der Container bindet nur an `127.0.0.1`.
 Update: `git pull && docker compose up -d --build`. Backup: Ordner `data/` sichern (oder JSON-Export in der App).
 
+Admins können die vollständige SQLite-Datenbank auch unter **Admin → Datenbank-Backup** herunterladen und wiederherstellen. Hochgeladene Fotos und `.env` sind separat zu sichern; Hinweise zur Wiederherstellung stehen in der Entwickleranleitung.
+
 ## Konfiguration (`.env`)
 
 | Variable | Zweck |
@@ -46,7 +48,8 @@ Update: `git pull && docker compose up -d --build`. Backup: Ordner `data/` siche
 | `GOOGLE_MAPS_API_KEY` | Maps JavaScript API (Browser) |
 | `GOOGLE_MAPS_SERVER_KEY` | Routes API + Places API (New) (Server); Fallback: `GOOGLE_MAPS_API_KEY` |
 | `GOOGLE_MAPS_MAP_ID` | Optional eigene Map-ID (Advanced Markers) |
-| `LLM_BASE_URL` / `LLM_MODEL` / `LLM_API_KEY` | KI-Assistent (Standard: GitHub Models, Key = GitHub PAT mit `models:read`). Auch im Admin-Dashboard setzbar |
+| `LLM_PROVIDER` / `LLM_MODEL` / `LLM_API_KEY` | KI-Assistent: GitHub Copilot oder OpenAI-kompatible API; auch im Admin-Dashboard setzbar |
+| `LLM_BASE_URL` / `LLM_WEB_SEARCH` / `TAVILY_API_KEY` | Basis-URL und optionale Websuche; Details in der Entwickleranleitung |
 
 In der Google Cloud Console aktivieren: *Maps JavaScript API*, *Routes API*, *Places API (New)*.
 

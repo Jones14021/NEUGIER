@@ -48,6 +48,12 @@ export async function parseExcel(buf: Buffer, opts: { startDate?: string; curren
   for (const r of rows) if (r.date < start) r.date = `${Number(r.date.slice(0, 4)) + 1}${r.date.slice(4)}`;
 
   const out: TypedEntity[] = [];
+  const keyCounts = new Map<string, number>();
+  const uniqueKey = (key: string) => {
+    const count = (keyCounts.get(key) ?? 0) + 1;
+    keyCounts.set(key, count);
+    return count === 1 ? key : `${key}:${count}`;
+  };
   const byDate = new Map<string, Row[]>();
   for (const r of rows) byDate.set(r.date, [...(byDate.get(r.date) ?? []), r]);
 
@@ -80,18 +86,18 @@ export async function parseExcel(buf: Buffer, opts: { startDate?: string; curren
       const isEvent = !r.act && !r.camp;
       if (isEvent) {
         const kind: StopKind = /unterkunft|hotel|b&b|bed/i.test(r.title) ? 'accommodation' : 'transport';
-        out.push({ type: 'stop', data: stop(`xl:row:${date}:${slug}`, dayKey, order++, kind, r.title, '', r.time) });
+        out.push({ type: 'stop', data: stop(uniqueKey(`xl:row:${date}:${slug}`), dayKey, order++, kind, r.title, '', r.time) });
       }
       if (r.act) {
         const [name, ...rest] = r.act.split('\n');
         const kind: StopKind = /wanderung|track|walk/i.test(r.act) ? 'hike' : 'activity';
-        const s = stop(`xl:act:${date}`, dayKey, order++, kind, name, rest.join('\n').trim(), '');
+        const s = stop(uniqueKey(`xl:act:${date}`), dayKey, order++, kind, name, rest.join('\n').trim(), '');
         if (r.actLink) s.links = [r.actLink];
         out.push({ type: 'stop', data: s });
       }
       if (r.camp) {
         const [name, ...rest] = r.camp.split('\n');
-        const s = stop(`xl:camp:${date}`, dayKey, 100 + order++, 'campsite', name, rest.join('\n').trim(), '');
+        const s = stop(uniqueKey(`xl:camp:${date}`), dayKey, 100 + order++, 'campsite', name, rest.join('\n').trim(), '');
         s.camp = { type: campType(r.camp) };
         s.booking = /gebucht/i.test(r.camp) ? 'gebucht' : /buchen/i.test(r.camp + r.details) ? 'offen' : '';
         const links = [r.detailsLink].filter(Boolean) as string[];
@@ -102,7 +108,7 @@ export async function parseExcel(buf: Buffer, opts: { startDate?: string; curren
         const amount = typeof r.price === 'number' ? r.price : parseAmount(r.priceText);
         const e: Expense = {
           id: '',
-          key: `xl:price:${date}:${slug}`,
+          key: uniqueKey(`xl:price:${date}:${slug}`),
           dayId: `${REF}${dayKey}`,
           stopId: null,
           title: oneLine(r.camp && !r.act ? r.camp : r.act || r.title),
