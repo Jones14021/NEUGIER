@@ -3,6 +3,7 @@ import { Bot, FlaskConical, Images, Map, Menu, Navigation, Wallet } from 'lucide
 import { ROLE_LABEL, sortedDays } from '@neugier/shared';
 import { api } from './api';
 import { MapProvider } from './components/MapView';
+import { ShareDialog } from './components/ShareDialog';
 import { findToday, useOnline } from './hooks';
 import { Admin } from './pages/Admin';
 import { Chat } from './pages/Chat';
@@ -54,6 +55,7 @@ export function App({ onLogout }: { onLogout: () => void }) {
             <Route path="/" element={<Overview />} />
             <Route path="/erinnerungen" element={<Memories />} />
             <Route path="/mehr" element={<More onLogout={onLogout} />} />
+            <Route path="/teilen" element={<ShareDialog />} />
             {canPlan && (
               <>
                 <Route path="/tag/:dayId" element={<DayPage />} />

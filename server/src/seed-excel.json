@@ -87,7 +87,30 @@
       "time": "",
       "duration": "",
       "links": [],
-      "booking": ""
+      "booking": "",
+      "geoFailed": true
+    }
+  },
+  {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:stay:2026-12-16:unterkunft-auckland-manha-hote",
+      "dayId": "@key:xl:day:2026-12-16",
+      "order": 102,
+      "scope": "main",
+      "kind": "accommodation",
+      "name": "Manha Hotel Aucklad Airport",
+      "notes": "Check in ab 14:00\nGebucht über Booking (Theresa)",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "gebucht",
+      "lat": -36.9841916,
+      "lng": 174.7764726,
+      "address": "36 Pavilion Drive, Māngere, Auckland 2022, Neuseeland",
+      "placeId": "ChIJUzfw_AxPDW0Rfrv8NdJgTzQ",
+      "geoFailed": false
     }
   },
   {
@@ -226,14 +249,20 @@
       "scope": "main",
       "kind": "campsite",
       "name": "wolleys bay (western carpark) freedom",
-      "notes": "oder sandy bay carpark: freedom",
+      "notes": "oder sandy bay carpark: freedom\n\nLaut Rankers vom 18. Dezember bis 8. Februar für Übernachtungen geschlossen; Alternative prüfen.",
       "time": "",
       "duration": "",
-      "links": [],
+      "links": [
+        "https://www.rankers.co.nz/experiences/9902-Woolleys_Bay_Western_Carpark_Overnight_Campervan_Parking"
+      ],
       "booking": "",
       "camp": {
         "type": "freedom"
-      }
+      },
+      "lat": -35.5603269311266,
+      "lng": 174.48525121212,
+      "address": "Woolleys Bay Western Carpark, Matapouri, Neuseeland",
+      "geoFailed": false
     }
   },
   {
@@ -327,7 +356,8 @@
       "time": "",
       "duration": "",
       "links": [],
-      "booking": ""
+      "booking": "",
+      "geoFailed": true
     }
   },
   {
@@ -619,7 +649,8 @@
       "time": "",
       "duration": "",
       "links": [],
-      "booking": ""
+      "booking": "",
+      "geoFailed": true
     }
   },
   {
@@ -676,7 +707,8 @@
       "time": "",
       "duration": "",
       "links": [],
-      "booking": ""
+      "booking": "",
+      "geoFailed": true
     }
   },
   {
@@ -845,7 +877,8 @@
       "time": "",
       "duration": "",
       "links": [],
-      "booking": ""
+      "booking": "",
+      "geoFailed": true
     }
   },
   {
@@ -1065,7 +1098,8 @@
       "time": "",
       "duration": "",
       "links": [],
-      "booking": ""
+      "booking": "",
+      "geoFailed": true
     }
   },
   {
@@ -1137,7 +1171,12 @@
       "time": "",
       "duration": "",
       "links": [],
-      "booking": ""
+      "booking": "",
+      "lat": -40.5029623,
+      "lng": 172.6790795,
+      "address": "Wharariki Beach, Wharariki Road, Pūponga 7073, Neuseeland",
+      "placeId": "ChIJb9XbbVzkPG0ROUsFPCBFhkw",
+      "geoFailed": false
     }
   },
   {
@@ -1500,7 +1539,12 @@
       "links": [
         "https://www.komoot.com/de-de/tour/3244452638?share_token=aD6tUy1fV9RAdd5VhdPg8hP8KVpkpbgIme2zL7BYjAVpUn2ulB&ref=wtd&t_s=referral&t_cid=route_share&t_ref_username=3298652191339"
       ],
-      "booking": ""
+      "booking": "",
+      "lat": -44.978475,
+      "lng": 168.8024496,
+      "address": "Lake Hayes Walkway, Lake Hayes 9371, Neuseeland",
+      "placeId": "ChIJaX7sF04f1akRbOlhPRDaubw",
+      "geoFailed": false
     }
   },
   {
@@ -1572,7 +1616,8 @@
       "time": "",
       "duration": "",
       "links": [],
-      "booking": ""
+      "booking": "",
+      "geoFailed": true
     }
   },
   {
@@ -1723,13 +1768,19 @@
       "scope": "day",
       "kind": "hike",
       "name": "Wanderung: Giants-Gate (10,5 km; 110 hm; ca 3 h)",
-      "notes": "",
+      "notes": "Wanderung zu Giant Gate Falls: Wassertaxi von Deepwater Basin nach Sandfly Point erforderlich. Zeiten und Buchung prüfen.",
       "time": "",
       "duration": "",
       "links": [
-        "https://www.komoot.com/de-de/tour/3384858641?share_token=ajet3ThOhOc2JNHUJVriu1rY50DLi13xJDVd8HDYcLzNyichP6&ref=wtd&t_s=referral&t_cid=route_share&t_ref_username=3298652191339"
+        "https://www.komoot.com/de-de/tour/3384858641?share_token=ajet3ThOhOc2JNHUJVriu1rY50DLi13xJDVd8HDYcLzNyichP6&ref=wtd&t_s=referral&t_cid=route_share&t_ref_username=3298652191339",
+        "https://www.fiordlandoutdoors.co.nz/transport-and-experiences/milford-track-day-walk/milford-track-day-walk-milford-sound/"
       ],
-      "booking": ""
+      "booking": "",
+      "lat": -44.6771695,
+      "lng": 167.9212855,
+      "address": "Deepwater Basin Boat Ramp, Milford Sound, Neuseeland",
+      "placeId": "ChIJE6xdIwzd1akR4B67Xkvxlzo",
+      "geoFailed": false
     }
   },
   {
@@ -1917,7 +1968,8 @@
       "time": "",
       "duration": "",
       "links": [],
-      "booking": ""
+      "booking": "",
+      "geoFailed": true
     }
   },
   {
@@ -1974,7 +2026,8 @@
       "time": "",
       "duration": "",
       "links": [],
-      "booking": ""
+      "booking": "",
+      "geoFailed": true
     }
   },
   {
@@ -1994,7 +2047,12 @@
       "booking": "",
       "camp": {
         "type": "doc"
-      }
+      },
+      "lat": -43.6967667,
+      "lng": 173.0618209,
+      "address": "1357 Okains Bay Road, Okains Bay 7583, Neuseeland",
+      "placeId": "ChIJ5WN3g4rQM20RNWfIeWstedc",
+      "geoFailed": false
     }
   },
   {
@@ -2124,6 +2182,24 @@
     }
   },
   {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:stay:2027-01-16:unterkunft-christchurch-bed-br",
+      "dayId": "@key:xl:day:2027-01-16",
+      "order": 102,
+      "scope": "main",
+      "kind": "accommodation",
+      "name": "Bed & Breakfast in the Heart of Fedalton",
+      "notes": "Check in ab 14:00 bis 23:30\nGebucht über Booking (Theresa)",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "gebucht",
+      "geoFailed": true
+    }
+  },
+  {
     "type": "expense",
     "data": {
       "id": "",
@@ -2230,6 +2306,28 @@
     }
   },
   {
+    "type": "stop",
+    "data": {
+      "id": "",
+      "key": "xl:stay:2027-01-18:singapur-hotel-mi-rochor",
+      "dayId": "@key:xl:day:2027-01-18",
+      "order": 101,
+      "scope": "main",
+      "kind": "accommodation",
+      "name": "Hotel Mi Rochor",
+      "notes": "Check in 24/7",
+      "time": "",
+      "duration": "",
+      "links": [],
+      "booking": "",
+      "lat": 1.3036966,
+      "lng": 103.8515077,
+      "address": "89 Short St, Singapur 188216",
+      "placeId": "ChIJGatxFuYZ2jERPoiFX8j2yaM",
+      "geoFailed": false
+    }
+  },
+  {
     "type": "expense",
     "data": {
       "id": "",
@@ -2278,7 +2376,8 @@
       "time": "",
       "duration": "",
       "links": [],
-      "booking": ""
+      "booking": "",
+      "geoFailed": true
     }
   },
   {

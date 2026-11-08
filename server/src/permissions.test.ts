@@ -37,6 +37,7 @@ test('viewers cannot write comments or trip data', async () => {
     const timestamp = Date.now();
     const point = { lat: -36.8, lng: 174.7, timestamp };
     assert.equal((await request(`${prefix}/location`, 'POST', viewer.cookie, point)).status, 403);
+    assert.equal((await fetch(`${base}/maps/resolve-share?url=${encodeURIComponent('https://maps.app.goo.gl/example')}`, { headers: { cookie: viewer.cookie } })).status, 403);
     assert.equal((await request(`${prefix}/location`, 'POST', admin.cookie, { ...point, lat: 91 })).status, 400);
     assert.equal((await request(`${prefix}/location`, 'POST', admin.cookie, { ...point, timestamp: timestamp - 180_000 })).status, 400);
     assert.equal((await request(`${prefix}/location`, 'POST', admin.cookie, { ...point, timestamp: timestamp + 120_000 })).status, 400);

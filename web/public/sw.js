@@ -75,6 +75,10 @@ self.addEventListener('fetch', (e) => {
     if (url.pathname.startsWith('/ws')) return;
     if (url.pathname.startsWith('/api/auth')) return;
     if (url.pathname.startsWith('/api/admin/backup')) return;
+    if (url.pathname === '/teilen' && req.mode === 'navigate') {
+      return e.respondWith(fetch(req).catch(() => caches.match('/')));
+    }
+    if (url.pathname === '/manifest.webmanifest') return e.respondWith(networkFirst(req, SHELL));
     if (url.pathname.startsWith('/api/')) return e.respondWith(networkFirst(req, DATA));
     if (url.pathname.startsWith('/uploads/')) return e.respondWith(cacheFirst(req, MEDIA));
     // SPA-Navigation: immer die App-Shell

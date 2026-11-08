@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { AdvancedMarker, APILoadingStatus, APIProvider, Map, useApiLoadingStatus, useMap } from '@vis.gl/react-google-maps';
-import { LocateFixed } from 'lucide-react';
+import { LocateFixed, Maximize, Minimize } from 'lucide-react';
+import { mapMarkerScale } from '@neugier/shared';
 import { useStore } from '../store';
 
 type LatLng = { lat: number; lng: number };
@@ -57,6 +58,8 @@ interface Props {
   onMarkerClick?: (id: string) => void;
   onMarkerDrag?: (id: string, p: LatLng) => void;
   onMapClick?: (p: LatLng) => void;
+  fullscreenControl?: boolean;
+  scaleMarkers?: boolean;
   children?: ReactNode;
 }
 
@@ -85,11 +88,34 @@ export function MapProvider({ children }: { children: ReactNode }) {
 
 export function MapView(props: Props) {
   const { config } = useStore();
-  if (!config.mapsApiKey) return <NoKeyMap {...props} />;
-  return <GoogleMapView {...props} />;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [manualFullscreen, setManualFullscreen] = useState(false);
+  useEffect(() => {
+    const changed = () => setFullscreen(document.fullscreenElement === containerRef.current);
+    const keydown = (event: KeyboardEvent) => { if (event.key === 'Escape') setManualFullscreen(false); };
+    document.addEventListener('fullscreenchange', changed);
+    document.addEventListener('keydown', keydown);
+    return () => { document.removeEventListener('fullscreenchange', changed); document.removeEventListener('keydown', keydown); };
+  }, []);
+  const toggle = async () => {
+    if (manualFullscreen) return setManualFullscreen(false);
+    if (document.fullscreenElement === containerRef.current) return void await document.exitFullscreen();
+    try {
+      if (!containerRef.current?.requestFullscreen) throw new Error('Fullscreen unavailable');
+      await containerRef.current.requestFullscreen();
+    } catch { setManualFullscreen(true); }
+  };
+  const expanded = fullscreen || manualFullscreen;
+  const children = <>{props.children}{props.fullscreenControl && <button className="icon-btn map-fullscreen" title={expanded ? 'Vollbild beenden' : 'Karte im Vollbild'} aria-label={expanded ? 'Vollbild beenden' : 'Karte im Vollbild'} onClick={() => void toggle()}>{expanded ? <Minimize size={18} /> : <Maximize size={18} />}</button>}</>;
+  const mapProps = { ...props, children, containerRef, manualFullscreen };
+  if (!config.mapsApiKey) return <NoKeyMap {...mapProps} />;
+  return <GoogleMapView {...mapProps} />;
 }
 
-function GoogleMapView(props: Props) {
+type MapContainerProps = Props & { containerRef: React.RefObject<HTMLDivElement | null>; manualFullscreen: boolean };
+
+function GoogleMapView(props: MapContainerProps) {
   const { config } = useStore();
   const status = useApiLoadingStatus();
   const authFailed = useContext(MapAuthFailure);
@@ -97,7 +123,7 @@ function GoogleMapView(props: Props) {
     return <NoKeyMap {...props} error="Google Maps konnte nicht geladen werden. Browser-Key, erlaubte Website und Abrechnung prüfen." />;
   }
   return (
-    <div className="map">
+    <div ref={props.containerRef} className={`map${props.manualFullscreen ? ' manual-fullscreen' : ''}`}>
       <Map
         mapId={config.mapId}
         defaultCenter={{ lat: -41, lng: 173 }}
@@ -113,19 +139,7 @@ function GoogleMapView(props: Props) {
             <div className="leg-label">{l.text}</div>
           </AdvancedMarker>
         ))}
-        {props.markers.map((m) => (
-          <AdvancedMarker
-            key={m.id}
-            position={m}
-            title={m.title}
-            draggable={m.draggable}
-            zIndex={m.active ? 1000 : m.muted ? 1 : 10}
-            onClick={() => props.onMarkerClick?.(m.id)}
-            onDragEnd={(e) => e.latLng && props.onMarkerDrag?.(m.id, { lat: e.latLng.lat(), lng: e.latLng.lng() })}
-          >
-            <Pin m={m} />
-          </AdvancedMarker>
-        ))}
+        <MapMarkers markers={props.markers} scaleMarkers={props.scaleMarkers} onMarkerClick={props.onMarkerClick} onMarkerDrag={props.onMarkerDrag} />
         {props.camper && (
           <AdvancedMarker position={props.camper} zIndex={3000} title={props.camper.title}>
             <div className={`camper${props.camper.live ? ' live' : ''}`}>🚐</div>
@@ -137,6 +151,24 @@ function GoogleMapView(props: Props) {
       {props.children}
     </div>
   );
+}
+
+function MapMarkers({ markers, scaleMarkers, onMarkerClick, onMarkerDrag }: Pick<Props, 'markers' | 'scaleMarkers' | 'onMarkerClick' | 'onMarkerDrag'>) {
+  const map = useMap();
+  const [zoom, setZoom] = useState(5);
+  useEffect(() => {
+    if (!map) return;
+    const update = () => setZoom(map.getZoom() ?? 5);
+    update();
+    const listener = map.addListener('zoom_changed', update);
+    return () => listener.remove();
+  }, [map]);
+  const scale = scaleMarkers ? mapMarkerScale(zoom) : 1;
+  return markers.map((marker) => <AdvancedMarker key={marker.id} position={marker} title={marker.title} draggable={marker.draggable}
+    zIndex={marker.active ? 1000 : marker.muted ? 1 : 10} onClick={() => onMarkerClick?.(marker.id)}
+    onDragEnd={(event) => event.latLng && onMarkerDrag?.(marker.id, { lat: event.latLng.lat(), lng: event.latLng.lng() })}>
+    <div style={{ transform: `scale(${scale})`, transformOrigin: 'bottom center' }}><Pin m={marker} /></div>
+  </AdvancedMarker>);
 }
 
 function Pin({ m }: { m: MapMarker }) {
@@ -224,13 +256,13 @@ function MyLocation() {
 }
 
 /** Ersatzdarstellung ohne API-Key: einfache Projektion der Punkte (Drag ändert Koordinaten ebenfalls). */
-function NoKeyMap({ markers, paths, labels, camper, onMarkerClick, onMarkerDrag, children, error }: Props & { error?: string }) {
-  const box = useRef<HTMLDivElement>(null);
+function NoKeyMap({ markers, paths, labels, camper, onMarkerClick, onMarkerDrag, children, error, containerRef, manualFullscreen, scaleMarkers }: MapContainerProps & { error?: string }) {
+  const box = containerRef;
   const [drag, setDrag] = useState<{ id: string; x: number; y: number } | null>(null);
   const pts = [...markers, ...paths.flatMap((p) => p.path), ...(camper ? [camper] : [])];
   if (!pts.length) {
     return (
-      <div className="map nokey">
+      <div ref={box} className={`map nokey${manualFullscreen ? ' manual-fullscreen' : ''}`}>
         <p className="muted small">{error ?? 'Keine Koordinaten · Google Maps API-Key fehlt (.env)'}</p>
         {children}
       </div>
@@ -255,7 +287,7 @@ function NoKeyMap({ markers, paths, labels, camper, onMarkerClick, onMarkerDrag,
 
   return (
     <div
-      className="map nokey"
+      className={`map nokey${manualFullscreen ? ' manual-fullscreen' : ''}`}
       ref={box}
       onPointerMove={(e) => drag && setDrag({ id: drag.id, ...rel(e) })}
       onPointerUp={() => {
@@ -297,7 +329,7 @@ function NoKeyMap({ markers, paths, labels, camper, onMarkerClick, onMarkerDrag,
               setDrag({ id: m.id, ...rel(e) });
             }}
           >
-            <Pin m={m} />
+            <div style={scaleMarkers ? { transform: 'scale(0.65)', transformOrigin: 'bottom center' } : undefined}><Pin m={m} /></div>
           </div>
         );
       })}

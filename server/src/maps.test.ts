@@ -60,6 +60,9 @@ test('geocoding retries API failures instead of marking stops as not found', asy
     assert.deepEqual(route.path[0], { lat: 38.5, lng: -120.2 });
     await computeRoute(points, trip.region);
     assert.equal(routeRequests, 1);
+    const flightRoute = await computeRoute([points[0], { ...points[1], routeBreakBefore: true }], trip.region);
+    assert.equal(flightRoute.legs[0].path?.length, 0);
+    assert.equal(routeRequests, 1);
   } finally {
     globalThis.fetch = originalFetch;
     db.close();

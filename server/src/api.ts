@@ -13,6 +13,7 @@ import { toJson, toSplidCsv, toSplidText } from './exporters';
 import { parseExcel } from './importers/excel';
 import { chat, llmSettings } from './llm';
 import { computeRoute, geocodeMissing, searchPlaces } from './maps';
+import { resolveMapShare } from './maps-share';
 import { buildMergeOps, fromExport, planMerge, type Resolution } from './merge';
 import { applyOps, events, getState, listChanges, listTrips, restoreVersion, rollbackBatch, updateLiveLocation } from './store';
 
@@ -331,6 +332,9 @@ export function api(): express.Router {
   );
 
   // --- Karten ---
+  r.get('/maps/resolve-share', requireRole('editor'), h(async (req, res) => {
+    res.json(await resolveMapShare(String(req.query.url ?? '')));
+  }));
   r.post(
     '/maps/route',
     requireRole('viewer'),
@@ -340,8 +344,8 @@ export function api(): express.Router {
     '/maps/search',
     requireRole('viewer'),
     h(async (req, res) => {
-      const lat = Number(req.query.lat);
-      const lng = Number(req.query.lng);
+      const lat = req.query.lat === undefined ? NaN : Number(req.query.lat);
+      const lng = req.query.lng === undefined ? NaN : Number(req.query.lng);
       res.json(await searchPlaces(String(req.query.q ?? ''), Number.isFinite(lat) ? { lat, lng } : undefined));
     }),
   );

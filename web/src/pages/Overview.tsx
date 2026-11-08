@@ -10,6 +10,7 @@ import {
   fmtKm,
   hasCoords,
   insertDayOps,
+  isFlightStop,
   KIND_COLOR,
   moveDayOps,
   plannedCamperStop,
@@ -61,7 +62,12 @@ export function Overview() {
       }),
     [days, state.stops],
   );
-  const routePts = useMemo(() => overnights.map((o) => ({ ...o.camp, id: o.day.id })), [overnights]);
+  const routePts = useMemo(() => overnights.map((overnight, index) => {
+    const previous = overnights[index - 1];
+    const routeBreakBefore = !!previous && days.slice(previous.index + 1, overnight.index + 1)
+      .some((day) => state.stops.some((stop) => stop.dayId === day.id && isFlightStop(stop)));
+    return { ...overnight.camp, id: overnight.day.id, routeBreakBefore };
+  }), [overnights, days, state.stops]);
   const route = useRoute(routePts, state.trip.region);
   const legByDay = useMemo(() => legsByDest(routePts, route), [routePts, route]);
 
@@ -83,21 +89,22 @@ export function Overview() {
 
   const paths: MapPath[] = useMemo(() => {
     const t = todayIso();
-    return overnights.slice(1).map((o, k) => {
+    return overnights.slice(1).flatMap((o, k) => {
+      if (routePts[k + 1].routeBreakBefore) return [];
       const prev = overnights[k];
       const leg = legByDay.get(o.day.id);
       const passed = o.day.date < t;
       const straight = !leg || !leg.durationSec;
-      return {
+      return [{
         id: o.day.id,
         path: leg?.path?.length ? leg.path : [prev.camp, o.camp],
         color: passed ? PASSED : UPCOMING,
         opacity: passed ? 0.7 : 0.95,
         dashed: straight,
         weight: passed ? 3 : 4,
-      };
+      }];
     });
-  }, [overnights, legByDay]);
+  }, [overnights, routePts, legByDay]);
 
   const labels: MapLabel[] = useMemo(
     () =>
@@ -131,7 +138,12 @@ export function Overview() {
     listRef.current?.querySelector(`[data-day="${active}"]`)?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
   }, [active]);
 
-  const fullLink = routeLink(overnights.map((o) => o.camp), state.trip.region);
+  const segments = routePts.reduce<(typeof routePts)[]>((groups, point) => {
+    if (!groups.length || point.routeBreakBefore) groups.push([]);
+    groups[groups.length - 1].push(point);
+    return groups;
+  }, []);
+  const fullLink = routeLink(segments.sort((first, second) => second.length - first.length)[0] ?? [], state.trip.region);
   const totalSec = route?.legs.reduce((a, l) => a + l.durationSec, 0) ?? 0;
   const totalM = route?.legs.reduce((a, l) => a + l.distanceMeters, 0) ?? 0;
   const open = (d: Day) => canPlan && navigate(`/tag/${d.id}`);
@@ -144,6 +156,8 @@ export function Overview() {
         labels={labels}
         camper={camper}
         fitKey={`overview-${markers.length}`}
+        fullscreenControl
+        scaleMarkers
         focus={activeMarker ?? null}
         onMarkerClick={setActive}
       >

@@ -4,7 +4,7 @@ import { config } from './config';
 import { db } from './db';
 import { applyOps, getEntity, getState } from './store';
 
-type Pt = Pick<Stop, 'name' | 'lat' | 'lng' | 'placeId' | 'address'>;
+type Pt = Pick<Stop, 'name' | 'lat' | 'lng' | 'placeId' | 'address'> & { routeBreakBefore?: boolean };
 
 function waypoint(p: Pt, region: string) {
   if (p.lat != null && p.lng != null) return { location: { latLng: { latitude: p.lat, longitude: p.lng } } };
@@ -61,7 +61,9 @@ export async function computeRoute(points: Pt[], region: string): Promise<RouteR
   // Begrenzte Parallelität, um API-Limits zu schonen
   for (let i = 0; i < pairs.length; i += 6) {
     const chunk = await Promise.all(
-      pairs.slice(i, i + 6).map(async ([a, b]) => (config.mapsServerKey ? computeLeg(a, b, region).catch(() => null) : null)),
+      pairs.slice(i, i + 6).map(async ([a, b]) => b.routeBreakBefore
+        ? { distanceMeters: 0, durationSec: 0, path: [] }
+        : (config.mapsServerKey ? computeLeg(a, b, region).catch(() => null) : null)),
     );
     chunk.forEach((leg, j) => {
       const [a, b] = pairs[i + j];
@@ -90,6 +92,12 @@ export async function geocodeMissing(tripId: string): Promise<void> {
     const state = getState(tripId);
     if (!state) return;
     for (const s of state.stops.filter((x) => x.lat == null && !x.geoFailed && (x.address || x.name))) {
+      if (!s.address && s.kind !== 'transport' && /^(restday|reisetag|reise\s*&\s*strandtag|strand(?:tag)?\b|größere wanderung|fahrt zu einer weiteren bucht|dumpling essen)/i.test(s.name.trim())) {
+        applyOps(tripId, [{ op: 'update', type: 'stop', id: s.id, patch: { geoFailed: true } }], {
+          userName: 'Google Maps', userId: '', source: 'user', label: `Ort nicht eindeutig: ${s.name}`,
+        });
+        continue;
+      }
       const q = [s.address || s.name, s.kind === 'transport' ? '' : state.trip.region].filter(Boolean).join(', ');
       let hit: PlaceResult | undefined;
       try {

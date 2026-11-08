@@ -95,6 +95,15 @@ export async function parseExcel(buf: Buffer, opts: { startDate?: string; curren
         if (r.actLink) s.links = [r.actLink];
         out.push({ type: 'stop', data: s });
       }
+      const accommodation = !r.camp && r.act ? /\(([^)]*(?:hotel|bed\s*&\s*breakfast|b\s*&\s*b)[^)]*)\)/i.exec(r.title) : null;
+      if (accommodation) {
+        const name = oneLine(accommodation[1]);
+        const s = stop(uniqueKey(`xl:stay:${date}:${slug}`), dayKey, 100 + order++, 'accommodation', name, r.details, '');
+        s.booking = /gebucht/i.test(r.details) ? 'gebucht' : '';
+        if (/\b(?:in the heart of|im herzen von)\b/i.test(name)) s.geoFailed = true;
+        if (r.detailsLink) s.links = [r.detailsLink];
+        out.push({ type: 'stop', data: s });
+      }
       if (r.camp) {
         const [name, ...rest] = r.camp.split('\n');
         const s = stop(uniqueKey(`xl:camp:${date}`), dayKey, 100 + order++, 'campsite', name, rest.join('\n').trim(), '');

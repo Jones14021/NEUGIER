@@ -36,6 +36,13 @@ export function dayStops(stops: Stop[], dayId: string): Stop[] {
   return stops.filter((s) => s.dayId === dayId).sort((a, b) => a.order - b.order);
 }
 
+export function daysUntilNextShower(days: Day[], stops: Stop[], date: string): number | null {
+  const next = sortedDays(days).find((day) => day.date >= date &&
+    (day.shower.status === 'ja' || stops.some((stop) => stop.dayId === day.id && stop.kind === 'shower')));
+  if (!next) return null;
+  return Math.round((Date.parse(`${next.date}T00:00:00Z`) - Date.parse(`${date}T00:00:00Z`)) / 86_400_000);
+}
+
 /** Übernachtungsziel des Tages (letzter Hauptrouten-Stopp mit Übernachtung). */
 export function dayCamp(stops: Stop[], dayId: string): Stop | undefined {
   return dayStops(stops, dayId)
@@ -59,11 +66,18 @@ export function dayRoute(state: Pick<TripState, 'days' | 'stops'>, day: Day): { 
   const days = sortedDays(state.days);
   const idx = days.findIndex((d) => d.id === day.id);
   let start: Stop | undefined;
-  for (let i = idx - 1; i >= 0 && !start; i--) start = dayCamp(state.stops, days[i].id);
+  for (let i = idx - 1; i >= 0 && !start; i--) {
+    start = dayCamp(state.stops, days[i].id);
+    if (!start && dayStops(state.stops, days[i].id).some(isFlightStop)) break;
+  }
   const stops = dayStops(state.stops, day.id);
   // Bleibt man am selben Platz, keinen doppelten Start anzeigen
   if (start && stops.length && sameplace(start, stops[0])) start = undefined;
   return { start, stops };
+}
+
+export function isFlightStop(stop: Stop): boolean {
+  return stop.kind === 'transport' && /flug|flight/i.test(stop.name);
 }
 
 function sameplace(a: Stop, b: Stop): boolean {
@@ -74,6 +88,10 @@ function sameplace(a: Stop, b: Stop): boolean {
 
 export function hasCoords(s: Stop): s is Stop & { lat: number; lng: number } {
   return s.lat != null && s.lng != null;
+}
+
+export function mapMarkerScale(zoom: number): number {
+  return Math.max(0.45, Math.min(1, 0.45 + (zoom - 5) * 0.11));
 }
 
 export function tripDate(trip: Trip, instant: Date = new Date()): string {

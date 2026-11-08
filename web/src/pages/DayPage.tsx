@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, FlaskConical, History, Lightbulb, Navigation, Plus } from 'lucide-react';
 import type { Day, Stop } from '@neugier/shared';
-import { fmtDate, fmtHours, fmtKm, KIND_ICON, moveStopOps, newId, routeLink, sortedDays, todayIso } from '@neugier/shared';
+import { daysUntilNextShower, fmtDate, fmtHours, fmtKm, isFlightStop, KIND_ICON, moveStopOps, newId, routeLink, sortedDays, todayIso } from '@neugier/shared';
 import { Comments } from '../components/Comments';
 import { CoverImage } from '../components/CoverImage';
 import { DayExpenses } from '../components/DayExpenses';
@@ -14,6 +14,7 @@ import { MapView } from '../components/MapView';
 import { EditableRichText } from '../components/RichText';
 import { StopEditor } from '../components/StopEditor';
 import { StopList } from '../components/StopList';
+import { ShoppingSuggestions } from '../components/ShoppingSuggestions';
 import { useTrip } from '../store';
 
 /** Tagesansicht: alle Stopps (Haupt- und Tagesroute) auf der Karte + Liste mit Navigation. */
@@ -38,8 +39,11 @@ export function DayPage() {
 
   if (!day) return <div className="center muted">Tag nicht gefunden</div>;
 
-  const navAll = routeLink(dm.routePts.length ? dm.routePts : dm.stops, state.trip.region);
-  const navFromHere = routeLink(dm.stops, state.trip.region, true);
+  const flightDay = dm.stops.some(isFlightStop);
+  const navigable = flightDay ? dm.stops.filter((stop) => stop.kind !== 'transport' || /fähre|ferry/i.test(stop.name)) : dm.stops;
+  const navAll = routeLink(flightDay ? navigable : dm.routePts.length ? dm.routePts : navigable, state.trip.region);
+  const navFromHere = routeLink(navigable, state.trip.region, true);
+  const daysToShower = daysUntilNextShower(state.days, state.stops, day.date);
   const updateDay = (patch: Partial<Day>, label = 'Tag bearbeitet') => apply([{ op: 'update', type: 'day', id: day.id, patch }], label);
 
   const saveStop = (s: Stop, isNew: boolean) => {
@@ -139,6 +143,7 @@ export function DayPage() {
 
           <h3>Ausstattung</h3>
           <FacilityToggles day={day} disabled={!canEdit} onChange={(patch) => updateDay(patch, 'Ausstattung geändert')} />
+          <p className="small muted">Tage bis zur nächsten Dusche: {daysToShower === null ? 'keine geplant' : daysToShower === 0 ? 'heute' : daysToShower}</p>
           <EditableText
             value={day.shower.note}
             placeholder="Wo duschen? (z. B. Campingplatz Tutukaka)"
@@ -215,6 +220,8 @@ export function DayPage() {
               ))}
             </div>
           )}
+
+          <ShoppingSuggestions day={day} routePoints={dm.routePts} />
 
           <h3>Notizen</h3>
           <EditableRichText value={day.notes} placeholder="Notizen zum Tag …" className="notes" disabled={!canEdit} onSave={(notes) => updateDay({ notes })} />

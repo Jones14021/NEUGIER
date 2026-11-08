@@ -3,21 +3,21 @@ import type { Day, RouteLeg, RouteResult, Stop } from '@neugier/shared';
 import { todayIso } from '@neugier/shared';
 import { api } from './api';
 
-type Pt = Pick<Stop, 'name' | 'lat' | 'lng' | 'placeId' | 'address'>;
+type Pt = Pick<Stop, 'name' | 'lat' | 'lng' | 'placeId' | 'address'> & { routeBreakBefore?: boolean };
 
 const cache = new Map<string, RouteResult>();
 
 /** Autoroute über den Server (Google Routes API, etappenweise, serverseitig gecacht). */
 export function useRoute(points: Pt[], region: string, enabled = true): RouteResult | null {
   const key = useMemo(
-    () => JSON.stringify([region, points.map((p) => [p.lat, p.lng, p.placeId, p.lat == null ? p.address || p.name : ''])]),
+    () => JSON.stringify([region, points.map((p) => [p.lat, p.lng, p.placeId, p.lat == null ? p.address || p.name : '', p.routeBreakBefore])]),
     [points, region],
   );
   const [res, setRes] = useState<{ key: string; r: RouteResult } | null>(null);
   useEffect(() => {
     if (!enabled || points.length < 2 || cache.has(key)) return;
     let alive = true;
-    const body = points.map(({ name, lat, lng, placeId, address }) => ({ name, lat, lng, placeId, address }));
+    const body = points.map(({ name, lat, lng, placeId, address, routeBreakBefore }) => ({ name, lat, lng, placeId, address, routeBreakBefore }));
     api<RouteResult>('/maps/route', { body: { points: body, region } })
       .then((r) => {
         cache.set(key, r);

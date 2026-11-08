@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { Day, RouteLeg, Stop, TripState } from '@neugier/shared';
-import { dayRoute, fmtHours, hasCoords, KIND_COLOR } from '@neugier/shared';
+import { dayRoute, fmtHours, hasCoords, isFlightStop, KIND_COLOR } from '@neugier/shared';
 import { legsByDest, useRoute } from '../hooks';
 import { midpoint, type MapLabel, type MapMarker, type MapPath } from './MapView';
 
@@ -10,7 +10,12 @@ import { midpoint, type MapLabel, type MapMarker, type MapPath } from './MapView
  */
 export function useDayMap(state: TripState, day: Day | undefined, activeId?: string | null, draggable = false) {
   const { start, stops } = useMemo(() => (day ? dayRoute(state, day) : { start: undefined, stops: [] as Stop[] }), [state, day]);
-  const routePts = useMemo(() => [start, ...stops].filter((s): s is Stop => !!s).filter(hasCoords), [start, stops]);
+  const routePts = useMemo(() => {
+    const flightDay = stops.some(isFlightStop);
+    return [start, ...stops].filter((stop): stop is Stop => !!stop)
+      .filter((stop) => !flightDay || stop.kind !== 'transport' || /fähre|ferry/i.test(stop.name))
+      .filter(hasCoords);
+  }, [start, stops]);
   const route = useRoute(routePts, state.trip.region, !!day);
   const legs: Map<string, RouteLeg> = useMemo(() => legsByDest(routePts, route), [routePts, route]);
 
