@@ -12,6 +12,7 @@ test('viewers cannot write comments or trip data', async () => {
   const { api } = await import('./api');
   const { db } = await import('./db');
   const { events, getState } = await import('./store');
+  const { toJson } = await import('./exporters');
   const app = express();
   app.use('/api', api());
   const server = app.listen(0);
@@ -33,6 +34,12 @@ test('viewers cannot write comments or trip data', async () => {
     const prefix = `/trips/${trip.id}`;
     assert.equal((await request(`${prefix}/comments`, 'POST', viewer.cookie, { targetId: trip.id, text: 'forbidden' })).status, 403);
     assert.equal((await request(`${prefix}/ops`, 'POST', viewer.cookie, { ops: [], label: 'forbidden' })).status, 403);
+    const todo = { id: 'todo-test', dayId: null, targetId: null, targetType: null, title: 'Test', done: false, createdAt: new Date().toISOString() };
+    assert.equal((await request(`${prefix}/ops`, 'POST', admin.cookie, { ops: [{ op: 'create', type: 'todo', data: todo }] })).status, 200);
+    assert.equal(getState(trip.id)?.todos?.[0].title, 'Test');
+    assert.equal(toJson(getState(trip.id)!).todos?.[0].title, 'Test');
+    const filtered = await (await fetch(`${base}${prefix}`, { headers: { cookie: viewer.cookie } })).json() as { todos?: unknown[] };
+    assert.equal(filtered.todos?.length, 0);
     assert.equal((await request(`${prefix}/comments`, 'POST', admin.cookie, { targetId: trip.id, text: 'allowed' })).status, 200);
     const timestamp = Date.now();
     const point = { lat: -36.8, lng: 174.7, timestamp };

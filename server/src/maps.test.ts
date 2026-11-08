@@ -10,7 +10,7 @@ test('geocoding retries API failures instead of marking stops as not found', asy
   process.env.DATA_DIR = directory;
   process.env.GOOGLE_MAPS_SERVER_KEY = 'test-key';
   const { db } = await import('./db');
-  const { applyOps, getState } = await import('./store');
+  const { applyOps, events, getState } = await import('./store');
   const { computeRoute, geocodeMissing } = await import('./maps');
   const originalFetch = globalThis.fetch;
   try {
@@ -18,7 +18,12 @@ test('geocoding retries API failures instead of marking stops as not found', asy
     const stop: Stop = { id: 'stop', dayId: null, order: 0, scope: 'main', kind: 'campsite', name: 'Test', notes: '', time: '', duration: '', links: [], booking: '' };
     applyOps(trip.id, [{ op: 'create', type: 'trip', data: trip }, { op: 'create', type: 'stop', data: stop }], { userName: 'Test', userId: '', source: 'user', label: 'Test' });
     globalThis.fetch = async () => new Response('', { status: 403 });
+    const active: boolean[] = [];
+    const listener = (event: { active: boolean }) => active.push(event.active);
+    events.on('geocoding', listener);
     await geocodeMissing(trip.id);
+    events.off('geocoding', listener);
+    assert.deepEqual(active, [true, false]);
     assert.equal(getState(trip.id)!.stops[0].geoFailed, undefined);
     globalThis.fetch = async () => Response.json({ places: [{ id: 'place', displayName: { text: 'Test' }, formattedAddress: 'Test address', location: { latitude: -36, longitude: 174 } }] });
     await geocodeMissing(trip.id);

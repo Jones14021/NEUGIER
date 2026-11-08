@@ -57,15 +57,17 @@ In der Google Cloud Console aktivieren: *Maps JavaScript API*, *Routes API*, *Pl
 ## Funktionen
 
 * **Gesamtreise**: Karte mit Vollbild, zoombasierten Pins, Hauptroute und Tageskarten
-* **Tag / Heute**: Stopps, Fahrzeiten, Navigation, Einkaufsorte entlang der Route und Tage bis zur nächsten geplanten Dusche
+* **Tag / Heute**: Stopps, Fahrzeiten mit zusätzlichem Zeitpuffer, Navigation, Google-Maps-Supermarktsuche und Tage bis zur nächsten geplanten Dusche
 * **Hauptroute vs. Tagesroute** pro Stopp; Cafés, Wanderungen, Duschen erscheinen nicht auf der Gesamtkarte
 * **Duschen getrennt vom Campen** geplant
 * **Live-Collab** (WebSocket) mit Präsenz, **Versionshistorie** mit Rollback (Batch oder einzelner Stopp)
 * **Rollen**: Zuschauer / Mitarbeiter / Admin, Admin-Dashboard
 * **Kommentare** an Tagen und Stopps, von Mitarbeitern bearbeitbar; Zuschauer lesen nur
+* **Todos**: Aufgaben aus Tagen, Stopps und Kommentaren anlegen und gemeinsam erledigen
 * **Standort teilen**: Mitarbeiter können GPS freigeben; Zuschauer sehen die letzte aktuelle Position oder das geplante Tagesziel
 * **Ausgaben**: wer hat gezahlt + Preis, Aufteilung, Export für Splid
 * **Erinnerungen**: Text + Fotos, getrennt von der Planung
 * **KI-Assistent** mit kompletter Reise als Kontext; Vorschläge als Diff (Liste + Karte) zum Annehmen/Ablehnen/Ändern
 * **Import** Excel/JSON inkl. Re-Import mit 3-Wege-Merge und Konflikt-UI; **Export** JSON
 * **Android-Teilen**: Google-Maps-Links in der installierten PWA als Idee oder Tagesstopp übernehmen
+* **PWA-Updates**: Neue Versionen werden nach dem Download automatisch aktiviert; lokal gespeicherte Offline-Änderungen bleiben erhalten

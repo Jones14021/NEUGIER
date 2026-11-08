@@ -13,6 +13,7 @@ export function replaceWithImport(state: TripState, incoming: TypedEntity[]): nu
   const oldDays = new Map(state.days.map((day) => [day.date, day.id]));
   const ids = new Map(incoming.map((item) => [item.data.key!, item.type === 'day' ? oldDays.get((item.data as Day).date) ?? newId() : newId()]));
   const ops: Op[] = [
+    ...(state.todos ?? []).map((item): Op => ({ op: 'delete', type: 'todo', id: item.id })),
     ...state.comments.map((item): Op => ({ op: 'delete', type: 'comment', id: item.id })),
     ...state.memories.map((item): Op => ({ op: 'delete', type: 'memory', id: item.id })),
     ...state.expenses.map((item): Op => ({ op: 'delete', type: 'expense', id: item.id })),

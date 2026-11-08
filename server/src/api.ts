@@ -50,7 +50,7 @@ function state(req: Request) {
 
 /** Zuschauer: nur Reiseübersicht (Hauptroute, ohne Notizen/Ausgaben/Tagesplanung) + Erinnerungen. */
 export function viewerState(s: TripState): TripState {
-  const days = s.days.map((d) => ({ ...d, notes: '', times: '', shower: { ...d.shower, note: '' } }));
+  const days = s.days.map((d) => ({ ...d, notes: '', times: '', extraTravel: undefined, shower: { ...d.shower, note: '' } }));
   const stops = s.stops
     .filter((x) => x.dayId && x.scope === 'main')
     .map((x) => ({ ...x, notes: '', links: [], booking: '' as const, time: '', duration: '' }));
@@ -63,6 +63,7 @@ export function viewerState(s: TripState): TripState {
     expenses: [],
     memories: s.memories,
     comments: s.comments.filter((c) => visible.has(c.targetId) || s.memories.some((m) => m.id === c.targetId)),
+    todos: [],
   };
 }
 
@@ -299,6 +300,7 @@ export function api(): express.Router {
           ...data.expenses.map((d) => ({ type: 'expense' as const, data: d as AnyEntity })),
           ...data.memories.map((d) => ({ type: 'memory' as const, data: d as AnyEntity })),
           ...data.comments.map((d) => ({ type: 'comment' as const, data: d as AnyEntity })),
+          ...(data.todos ?? []).map((d) => ({ type: 'todo' as const, data: d as AnyEntity })),
         ]);
         source = 'json';
       } else {

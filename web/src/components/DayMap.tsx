@@ -65,5 +65,5 @@ export function useDayMap(state: TripState, day: Day | undefined, activeId?: str
 
   const totalSec = route?.legs.reduce((a, l) => a + l.durationSec, 0) ?? 0;
   const totalM = route?.legs.reduce((a, l) => a + l.distanceMeters, 0) ?? 0;
-  return { start, stops, routePts, legs, markers, paths, labels, totalSec, totalM, loading: routePts.length > 1 && !route };
+  return { start, stops, routePts, legs, markers, paths, labels, totalSec, totalM, loading: routePts.length > 1 && !route, unavailable: !!route?.fallback };
 }

@@ -6,6 +6,7 @@ import { api } from './api';
 import { App } from './App';
 import { Login } from './pages/Login';
 import { StoreProvider } from './store';
+import { registerServiceWorker } from './serviceWorker';
 import './styles.css';
 
 function Root() {
@@ -51,7 +52,7 @@ function Root() {
 
 // Service Worker nur im Produktions-Build (im Vite-Dev-Server würde er HMR stören)
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  addEventListener('load', registerServiceWorker);
 }
 
 createRoot(document.getElementById('root')!).render(

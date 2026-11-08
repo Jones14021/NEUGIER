@@ -85,8 +85,9 @@ export function applyOpsLocal(state: TripState, ops: Op[]): TripState {
     expenses: [...state.expenses],
     memories: [...state.memories],
     comments: [...state.comments],
+    todos: [...(state.todos ?? [])],
   };
-  const listKey = { day: 'days', stop: 'stops', expense: 'expenses', memory: 'memories', comment: 'comments' } as const;
+  const listKey = { day: 'days', stop: 'stops', expense: 'expenses', memory: 'memories', comment: 'comments', todo: 'todos' } as const;
   for (const op of ops) {
     if (op.type === 'trip') {
       if (op.op === 'update') next.trip = { ...next.trip, ...op.patch };

@@ -23,7 +23,9 @@ export function useRoute(points: Pt[], region: string, enabled = true): RouteRes
         cache.set(key, r);
         if (alive) setRes({ key, r });
       })
-      .catch(() => {});
+      .catch(() => {
+        if (alive) setRes({ key, r: { path: [], legs: points.slice(1).map(() => ({ distanceMeters: 0, durationSec: 0, path: [] })), fallback: true } });
+      });
     return () => {
       alive = false;
     };

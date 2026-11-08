@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Day, Stop } from '@neugier/shared';
-import { dayRoute, daysUntilNextShower, isFlightStop, mapMarkerScale } from '@neugier/shared';
+import { dayRoute, daysUntilNextShower, isFlightStop, mapMarkerScale, supermarketLink } from '@neugier/shared';
 
 test('counts calendar days until the next planned shower', () => {
   const day = (date: string, status: Day['shower']['status']): Day => ({ id: date, date, title: '', times: '', notes: '', shower: { status, note: '' } });
@@ -27,4 +27,10 @@ test('overview markers shrink when zoomed out and remain bounded', () => {
   assert.equal(mapMarkerScale(3), 0.45);
   assert.ok(mapMarkerScale(8) > mapMarkerScale(5));
   assert.equal(mapMarkerScale(18), 1);
+});
+
+test('supermarket link targets the selected location', () => {
+  const url = new URL(supermarketLink({ name: 'Camp', lat: -36.8, lng: 174.7 }, 'Neuseeland'));
+  assert.equal(url.searchParams.get('query'), 'supermarket near -36.8,174.7');
+  assert.equal(new URL(supermarketLink('Auckland', 'Neuseeland')).searchParams.get('query'), 'supermarket near Auckland, Neuseeland');
 });

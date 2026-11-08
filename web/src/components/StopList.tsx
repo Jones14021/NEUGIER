@@ -3,6 +3,7 @@ import { ExternalLink, GripVertical, History, Navigation, Pencil, Trash } from '
 import type { RouteLeg, Stop } from '@neugier/shared';
 import { CAMP_LABEL, fmtHours, fmtKm, KIND_COLOR, KIND_ICON, KIND_LABEL, placeLink, routeLink } from '@neugier/shared';
 import { RichTextView } from './RichText';
+import { TodoButton } from './TodoButton';
 
 interface Props {
   stops: Stop[];
@@ -17,6 +18,8 @@ interface Props {
   onHistory?: (s: Stop) => void;
   /** Zusätzlicher Inhalt pro Stopp (z. B. Kommentare). */
   extra?: (s: Stop) => ReactNode;
+  todoDayId?: string;
+  todoStopIds?: Set<string>;
 }
 
 /**
@@ -88,7 +91,7 @@ export function StopList(p: Props) {
             )}
             <div
               data-stop={s.id}
-              className={`stop${p.activeId === s.id ? ' active' : ''}${dragging ? ' dragging' : ''}`}
+              className={`stop${p.activeId === s.id ? ' active' : ''}${dragging ? ' dragging' : ''}${p.todoStopIds?.has(s.id) ? ' has-todo' : ''}`}
               style={dragging ? { transform: `translateY(${drag.y - drag.startY}px)` } : undefined}
               onClick={() => p.onSelect?.(s)}
             >
@@ -135,6 +138,7 @@ export function StopList(p: Props) {
                 </a>
                 {p.canEdit && (
                   <>
+                    {p.todoDayId && <TodoButton dayId={p.todoDayId} targetId={s.id} targetType="stop" initialTitle={s.name} />}
                     <button className="icon-btn" onClick={() => p.onEdit(s)} title="Bearbeiten">
                       <Pencil size={16} />
                     </button>

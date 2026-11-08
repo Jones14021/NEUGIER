@@ -17,6 +17,14 @@ export function placeLink(p: Point, region = ''): string {
   return u.toString();
 }
 
+export function supermarketLink(location: Point | string, region = ''): string {
+  const u = new URL('https://www.google.com/maps/search/');
+  u.searchParams.set('api', '1');
+  const target = typeof location === 'string' ? [location, region].filter(Boolean).join(', ') : loc(location, region);
+  u.searchParams.set('query', `supermarket near ${target}`);
+  return u.toString();
+}
+
 /**
  * Navigations-Link für Google Maps (App auf Android, sonst Web).
  * Ohne `fromCurrent` ist der erste Punkt der Start, sonst der aktuelle Standort.

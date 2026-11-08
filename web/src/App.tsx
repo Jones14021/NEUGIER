@@ -1,7 +1,8 @@
+import { useSyncExternalStore } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { Bot, FlaskConical, Images, Map, Menu, Navigation, Wallet } from 'lucide-react';
+import { Bot, FlaskConical, Images, ListTodo, Map, Menu, Navigation, Wallet } from 'lucide-react';
 import { ROLE_LABEL, sortedDays } from '@neugier/shared';
-import { api } from './api';
+import { api, subscribeWork, workStatus } from './api';
 import { MapProvider } from './components/MapView';
 import { ShareDialog } from './components/ShareDialog';
 import { findToday, useOnline } from './hooks';
@@ -13,13 +14,15 @@ import { Memories } from './pages/Memories';
 import { More } from './pages/More';
 import { Overview } from './pages/Overview';
 import { Playground } from './pages/Playground';
+import { Todos } from './pages/Todos';
 import { useStore } from './store';
 
 export function App({ onLogout }: { onLogout: () => void }) {
-  const { state, user, online, trips, canPlan, pendingCount } = useStore();
+  const { state, user, online, trips, canPlan, pendingCount, geocoding } = useStore();
   const netOnline = useOnline();
   const navigate = useNavigate();
   const location = useLocation();
+  const work = useSyncExternalStore(subscribeWork, workStatus, workStatus);
 
   if (!state) {
     return (
@@ -50,6 +53,7 @@ export function App({ onLogout }: { onLogout: () => void }) {
           <span className="role small muted">{ROLE_LABEL[user.role].split(' ')[0]}</span>
         </header>
         {!netOnline && <div className="offline-bar">Offline – du siehst den zuletzt geladenen Stand. Änderungen werden später gesendet.</div>}
+        {(work || geocoding) && <div className="loading-bar" role="status">{[work, geocoding ? 'Stopp-Orte werden gesucht' : ''].filter(Boolean).join(' · ')} …</div>}
         <main className="content">
           <Routes>
             <Route path="/" element={<Overview />} />
@@ -63,6 +67,7 @@ export function App({ onLogout }: { onLogout: () => void }) {
                 <Route path="/ausgaben" element={<Expenses />} />
                 <Route path="/assistent" element={<Chat />} />
                 <Route path="/spielplatz" element={<Playground />} />
+                <Route path="/todos" element={<Todos />} />
               </>
             )}
             {user.role === 'admin' && <Route path="/admin" element={<Admin />} />}
@@ -92,6 +97,7 @@ export function App({ onLogout }: { onLogout: () => void }) {
               <span>Ausgaben</span>
             </NavLink>
           )}
+          {canPlan && <NavLink to="/todos"><ListTodo size={20} /><span>Todos</span></NavLink>}
           <NavLink to="/erinnerungen">
             <Images size={20} />
             <span>Erinnerungen</span>

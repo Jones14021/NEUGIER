@@ -3,7 +3,7 @@ import type { AnyEntity, Change, ChangeSource, EntityType, LiveLocation, Op, Tri
 import { newId } from '@neugier/shared';
 import { db, getSetting, setSetting, tx } from './db';
 
-export const ENTITY_TYPES: EntityType[] = ['trip', 'day', 'stop', 'expense', 'memory', 'comment'];
+export const ENTITY_TYPES: EntityType[] = ['trip', 'day', 'stop', 'expense', 'memory', 'comment', 'todo'];
 
 /** Emittiert `change` mit { tripId, changes } – wird vom WebSocket-Hub verteilt. */
 export const events = new EventEmitter();
@@ -36,7 +36,7 @@ export function getState(tripId: string): TripState | null {
     type: EntityType;
     data: string;
   }[];
-  const state: Partial<TripState> = { days: [], stops: [], expenses: [], memories: [], comments: [] };
+  const state: Partial<TripState> = { days: [], stops: [], expenses: [], memories: [], comments: [], todos: [] };
   for (const r of rows) {
     const d = JSON.parse(r.data);
     if (r.type === 'trip') state.trip = d;
@@ -45,6 +45,7 @@ export function getState(tripId: string): TripState | null {
     else if (r.type === 'expense') state.expenses!.push(d);
     else if (r.type === 'memory') state.memories!.push(d);
     else if (r.type === 'comment') state.comments!.push(d);
+    else if (r.type === 'todo') state.todos!.push(d);
   }
   const location = getSetting(`trip.location.${tripId}`);
   state.liveLocation = location ? JSON.parse(location) as LiveLocation : null;

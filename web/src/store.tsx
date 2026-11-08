@@ -32,6 +32,7 @@ interface Ctx {
   geo: ReturnType<typeof useGeoWatch>;
   /** WebSocket verbunden. */
   online: boolean;
+  geocoding: boolean;
   /** Offline gespeicherte, noch nicht gesendete Änderungen. */
   pendingCount: number;
   /** Änderung anwenden (optimistisch; offline wird sie gespeichert und später gesendet). */
@@ -86,6 +87,7 @@ export function StoreProvider({ config, user, children }: { config: AppConfig; u
   const [state, setStateRaw] = useState<TripState | null>(() => (tripId ? loadJson<TripState | null>(stateKey(tripId), null) : null));
   const [presence, setPresence] = useState<Presence[]>([]);
   const [online, setOnline] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
   const [outbox, setOutbox] = useState<Pending[]>(() => loadJson<Pending[]>(OUTBOX_KEY, []));
   const [toastMsg, setToastMsg] = useState('');
   const [liveSharing, setLiveSharingRaw] = useState(() => localStorage.getItem('neugier.live') === '1');
@@ -207,12 +209,19 @@ export function StoreProvider({ config, user, children }: { config: AppConfig; u
       ws.onmessage = (ev) => {
         const msg = JSON.parse(ev.data);
         if (msg.type === 'changes') setState((s) => (s ? applyChanges(s, msg.changes) : s));
+        if (msg.type === 'todos') setState((s) => {
+          if (!s) return s;
+          const pending = loadJson<Pending[]>(OUTBOX_KEY, []).filter((item) => item.tripId === s.trip.id).flatMap((item) => item.ops.filter((op) => op.type === 'todo'));
+          return applyOpsLocal({ ...s, todos: msg.todos }, pending);
+        });
         if (msg.type === 'state') setState(msg.state);
         if (msg.type === 'location') setState((s) => (s ? { ...s, liveLocation: msg.location } : s));
+        if (msg.type === 'geocoding') setGeocoding(!!msg.active);
         if (msg.type === 'presence') setPresence(msg.users);
       };
       ws.onclose = () => {
         setOnline(false);
+        setGeocoding(false);
         if (!stopped) retry = setTimeout(connect, 3000);
       };
     };
@@ -277,6 +286,7 @@ export function StoreProvider({ config, user, children }: { config: AppConfig; u
       state,
       presence,
       online,
+      geocoding,
       pendingCount: outbox.length,
       canEdit: canPlan,
       canPlan,
@@ -289,7 +299,7 @@ export function StoreProvider({ config, user, children }: { config: AppConfig; u
       reload,
       toast,
     }),
-    [config, user, trips, state, presence, online, outbox.length, canPlan, liveSharing, setLiveSharing, geo, apply, selectTrip, setFocusDay, reload, toast],
+    [config, user, trips, state, presence, online, geocoding, outbox.length, canPlan, liveSharing, setLiveSharing, geo, apply, selectTrip, setFocusDay, reload, toast],
   );
 
   return (

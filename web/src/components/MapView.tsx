@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState
 import { AdvancedMarker, APILoadingStatus, APIProvider, Map, useApiLoadingStatus, useMap } from '@vis.gl/react-google-maps';
 import { LocateFixed, Maximize, Minimize } from 'lucide-react';
 import { mapMarkerScale } from '@neugier/shared';
+import { beginWork } from '../api';
 import { useStore } from '../store';
 
 type LatLng = { lat: number; lng: number };
@@ -119,6 +120,9 @@ function GoogleMapView(props: MapContainerProps) {
   const { config } = useStore();
   const status = useApiLoadingStatus();
   const authFailed = useContext(MapAuthFailure);
+  useEffect(() => {
+    if (!authFailed && (status === APILoadingStatus.NOT_LOADED || status === APILoadingStatus.LOADING)) return beginWork('Karte wird geladen');
+  }, [status, authFailed]);
   if (authFailed || status === APILoadingStatus.AUTH_FAILURE || status === APILoadingStatus.FAILED) {
     return <NoKeyMap {...props} error="Google Maps konnte nicht geladen werden. Browser-Key, erlaubte Website und Abrechnung prüfen." />;
   }

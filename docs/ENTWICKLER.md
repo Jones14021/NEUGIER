@@ -99,3 +99,7 @@ Vor einer Wiederherstellung eine aktuelle Sicherung herunterladen, alle Geräte 
 ## Orte von Android teilen
 
 NEUGIER auf Android mit einem unterstützten Browser wie Chrome als App installieren. Danach kann beim Teilen eines Textes oder Google-Maps-Links NEUGIER im Android-Teilen-Menü erscheinen. Der Dialog übernimmt den Ort erst nach Bestätigung als Idee oder Tagesstopp. Die Funktion hängt von Browser und Installation ab; Firefox und iOS unterstützen dieses Share-Target nicht. Google-Maps-Kurzlinks werden nur über erlaubte Google-Hosts aufgelöst. Nicht auflösbare Links bleiben gespeichert und der Ort kann nachträglich im Stopp-Editor gesucht werden.
+
+## Updates installierter PWAs
+
+Ein Produktions-Build versieht den Service Worker und die App-Dateien mit einer neuen Version. Installierte PWAs prüfen beim Öffnen, bei erneutem Fokus und ungefähr stündlich auf Updates. Nach dem vollständigen Download wird die neue Version automatisch aktiviert und alle offenen App-Fenster werden ohne Nachfrage neu geladen. Nicht gespeicherte Eingaben können dabei verloren gehen; bereits lokal gespeicherte Offline-Änderungen sowie Daten- und Medien-Caches bleiben erhalten. Offline-Geräte erhalten das Update, sobald sie wieder verbunden sind und nach Updates suchen.

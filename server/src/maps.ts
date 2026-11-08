@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import type { PlaceResult, RouteLeg, RouteResult, Stop } from '@neugier/shared';
 import { config } from './config';
 import { db } from './db';
-import { applyOps, getEntity, getState } from './store';
+import { applyOps, events, getEntity, getState } from './store';
 
 type Pt = Pick<Stop, 'name' | 'lat' | 'lng' | 'placeId' | 'address'> & { routeBreakBefore?: boolean };
 
@@ -77,6 +77,8 @@ export async function computeRoute(points: Pt[], region: string): Promise<RouteR
 const geoRunning = new Set<string>();
 const geoAgain = new Set<string>();
 
+export function isGeocoding(tripId: string): boolean { return geoRunning.has(tripId); }
+
 /**
  * Ergänzt Koordinaten für Stopps ohne lat/lng (z. B. nach Adressänderung oder Import).
  * Läuft im Hintergrund; Ergebnis kommt per Live-Update bei allen Clients an.
@@ -88,6 +90,7 @@ export async function geocodeMissing(tripId: string): Promise<void> {
     return;
   }
   geoRunning.add(tripId);
+  events.emit('geocoding', { tripId, active: true });
   try {
     const state = getState(tripId);
     if (!state) return;
@@ -121,6 +124,7 @@ export async function geocodeMissing(tripId: string): Promise<void> {
   } finally {
     geoRunning.delete(tripId);
     if (geoAgain.delete(tripId)) void geocodeMissing(tripId);
+    else events.emit('geocoding', { tripId, active: false });
   }
 }
 

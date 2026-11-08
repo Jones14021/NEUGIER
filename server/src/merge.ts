@@ -50,6 +50,7 @@ function all(state: TripState): TypedEntity[] {
     ...state.expenses.map((data) => ({ type: 'expense' as const, data })),
     ...state.memories.map((data) => ({ type: 'memory' as const, data })),
     ...state.comments.map((data) => ({ type: 'comment' as const, data })),
+    ...(state.todos ?? []).map((data) => ({ type: 'todo' as const, data })),
   ];
 }
 

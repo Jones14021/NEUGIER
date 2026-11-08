@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, FlaskConical, History, Lightbulb, Navigation, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, FlaskConical, History, Lightbulb, Navigation, Plus } from 'lucide-react';
 import type { Day, Stop } from '@neugier/shared';
-import { daysUntilNextShower, fmtDate, fmtHours, fmtKm, isFlightStop, KIND_ICON, moveStopOps, newId, routeLink, sortedDays, todayIso } from '@neugier/shared';
+import { dayCamp, dayStops, daysUntilNextShower, fmtDate, fmtHours, fmtKm, hasCoords, isFlightStop, KIND_ICON, moveStopOps, newId, routeLink, sortedDays, supermarketLink, todayIso } from '@neugier/shared';
 import { Comments } from '../components/Comments';
 import { CoverImage } from '../components/CoverImage';
 import { DayExpenses } from '../components/DayExpenses';
@@ -14,7 +14,7 @@ import { MapView } from '../components/MapView';
 import { EditableRichText } from '../components/RichText';
 import { StopEditor } from '../components/StopEditor';
 import { StopList } from '../components/StopList';
-import { ShoppingSuggestions } from '../components/ShoppingSuggestions';
+import { TodoButton } from '../components/TodoButton';
 import { useTrip } from '../store';
 
 /** Tagesansicht: alle Stopps (Haupt- und Tagesroute) auf der Karte + Liste mit Navigation. */
@@ -29,11 +29,14 @@ export function DayPage() {
   const [history, setHistory] = useState<string | 'day' | null>(null);
   const [active, setActive] = useState<string | null>(null);
   const [showPool, setShowPool] = useState(false);
+  const [extraMinutes, setExtraMinutes] = useState('0');
 
   useEffect(() => {
     setFocusDay(dayId ?? null);
     return () => setFocusDay(null);
   }, [dayId, setFocusDay]);
+
+  useEffect(() => { setExtraMinutes(String(day?.extraTravel?.minutes ?? 0)); }, [day?.id, day?.extraTravel?.minutes]);
 
   const dm = useDayMap(state, day, active, canEdit);
 
@@ -44,6 +47,8 @@ export function DayPage() {
   const navAll = routeLink(flightDay ? navigable : dm.routePts.length ? dm.routePts : navigable, state.trip.region);
   const navFromHere = routeLink(navigable, state.trip.region, true);
   const daysToShower = daysUntilNextShower(state.days, state.stops, day.date);
+  const camp = dayCamp(state.stops, day.id);
+  const shoppingLocation = camp && hasCoords(camp) ? camp : [...dayStops(state.stops, day.id)].reverse().find(hasCoords) ?? camp ?? day.title;
   const updateDay = (patch: Partial<Day>, label = 'Tag bearbeitet') => apply([{ op: 'update', type: 'day', id: day.id, patch }], label);
 
   const saveStop = (s: Stop, isNew: boolean) => {
@@ -81,6 +86,8 @@ export function DayPage() {
 
   const bias = dm.routePts[0];
   const pool = state.stops.filter((s) => !s.dayId);
+  const openTodos = (state.todos ?? []).filter((todo) => !todo.done);
+  const todoStopIds = new Set(openTodos.flatMap((todo) => todo.targetType === 'stop' && todo.targetId ? [todo.targetId] : todo.targetType === 'comment' ? [state.comments.find((comment) => comment.id === todo.targetId)?.targetId ?? ''] : []));
 
   return (
     <div className="split">
@@ -137,9 +144,21 @@ export function DayPage() {
           {dm.totalSec > 0 && (
             <p className="small muted">
               🚐 {fmtHours(dm.totalSec)} Fahrzeit · {fmtKm(dm.totalM)} <span className="muted">(Google Maps)</span>
+              {(day.extraTravel?.minutes ?? 0) > 0 && ` + ${day.extraTravel!.minutes} Min. = ${fmtHours(dm.totalSec + day.extraTravel!.minutes * 60)}`}
             </p>
           )}
           {dm.loading && <p className="small muted">Fahrzeiten werden berechnet …</p>}
+          {dm.unavailable && <p className="small muted">Einige Fahrzeiten sind derzeit nicht verfügbar.</p>}
+          <div className="extra-travel">
+            <label>Zusätzliche Fahrzeit (Minuten)<input type="number" min="0" max="1440" step="5" disabled={!canEdit} value={extraMinutes} onChange={(event) => setExtraMinutes(event.target.value)} onBlur={() => {
+              const parsed = Number(extraMinutes);
+              const minutes = Number.isFinite(parsed) ? Math.min(1440, Math.max(0, Math.round(parsed))) : 0;
+              setExtraMinutes(String(minutes));
+              if (minutes !== (day.extraTravel?.minutes ?? 0)) updateDay({ extraTravel: { minutes, note: day.extraTravel?.note ?? '' } }, 'Zusätzliche Fahrzeit geändert');
+            }} /></label>
+            <label>Grund<EditableText value={day.extraTravel?.note ?? ''} placeholder="z. B. Fähre oder Tunnel" disabled={!canEdit} onSave={(note) => updateDay({ extraTravel: { minutes: day.extraTravel?.minutes ?? 0, note } }, 'Fahrzeitgrund geändert')} /></label>
+            {day.extraTravel?.source && <a className="small" href={day.extraTravel.source} target="_blank" rel="noreferrer">Quelle prüfen</a>}
+          </div>
 
           <h3>Ausstattung</h3>
           <FacilityToggles day={day} disabled={!canEdit} onChange={(patch) => updateDay(patch, 'Ausstattung geändert')} />
@@ -151,9 +170,11 @@ export function DayPage() {
             disabled={!canEdit}
             onSave={(note) => updateDay({ shower: { ...day.shower, note } }, 'Dusche geplant')}
           />
+          {canEdit && openTodos.some((todo) => todo.dayId === day.id) && <div className="day-todos"><strong>Offene Todos</strong>{openTodos.filter((todo) => todo.dayId === day.id).map((todo) => <label key={todo.id} className="row"><input type="checkbox" checked={false} onChange={() => void apply([{ op: 'update', type: 'todo', id: todo.id, patch: { done: true } }], 'Todo erledigt')} />{todo.title}</label>)}</div>}
 
           <div className="section-head">
             <h3>Stopps</h3>
+            {canEdit && <TodoButton dayId={day.id} targetId={day.id} targetType="day" initialTitle={day.title} />}
             <button className="icon-btn" title="Historie dieses Tages" onClick={() => setHistory('day')}>
               <History size={18} />
             </button>
@@ -177,6 +198,8 @@ export function DayPage() {
             legs={dm.legs}
             activeId={active}
             canEdit={canEdit}
+            todoDayId={day.id}
+            todoStopIds={todoStopIds}
             onReorder={(id, to) => apply(moveStopOps(state.stops, id, day.id, to), 'Reihenfolge geändert')}
             onEdit={(s) => setEdit({ stop: s, isNew: false })}
             onDelete={deleteStop}
@@ -221,7 +244,10 @@ export function DayPage() {
             </div>
           )}
 
-          <ShoppingSuggestions day={day} routePoints={dm.routePts} />
+          <section className="shopping-section">
+            <h3>Einkaufsmöglichkeiten</h3>
+            <a className="btn" href={supermarketLink(shoppingLocation, state.trip.region)} target="_blank" rel="noreferrer"><ExternalLink size={16} /> Supermärkte in Google Maps</a>
+          </section>
 
           <h3>Notizen</h3>
           <EditableRichText value={day.notes} placeholder="Notizen zum Tag …" className="notes" disabled={!canEdit} onSave={(notes) => updateDay({ notes })} />

@@ -101,7 +101,7 @@
       "scope": "main",
       "kind": "accommodation",
       "name": "Manha Hotel Aucklad Airport",
-      "notes": "Check in ab 14:00\nGebucht über Booking (Theresa)",
+      "notes": "Check in ab 14:00\nGebucht über Booking (Theresa)\n\nÜbernachtungskosten pro Person (Excel): 50",
       "time": "",
       "duration": "",
       "links": [],
@@ -120,7 +120,7 @@
       "key": "xl:price:2026-12-16:unterkunft-auckland-manha-hote",
       "dayId": "@key:xl:day:2026-12-16",
       "stopId": null,
-      "title": "Dumpling essen :)",
+      "title": "Manha Hotel Aucklad Airport",
       "amount": 100,
       "currency": "EUR",
       "paidBy": "",
@@ -374,27 +374,13 @@
       "time": "",
       "duration": "",
       "links": [
-        "https://checkout.lodgify.com/paradise-camping/272879/room?currency=EUR&arrival=2026-12-20&departure=2026-12-21&adults=2&roomId=333325"
+        "https://checkout.lodgify.com/paradise-camping/272879/room?currency=EUR&arrival=2026-12-20&departure=2026-12-21&adults=2&roomId=333325",
+        "https://checkout.lodgify.com/paradise-camping/272879/room?currency=EUR&arrival=2026-12-19&departure=2026-12-20&adults=2&_gl=1*1qbhbnz*_ga*MTE2NDAzOTYwMC4xNzg4MDMyNjkx*_ga_PS45765VJ6*czE3ODgwMzI2OTAkbzEkZzAkdDE3ODgwMzI2OTUkajU1JGwwJGgw&_ga=2.194815076.854987230.1788032695-1164039600.1788032691&roomId=333325"
       ],
       "booking": "",
       "camp": {
         "type": ""
       }
-    }
-  },
-  {
-    "type": "expense",
-    "data": {
-      "id": "",
-      "key": "xl:price:2026-12-20:tararu-coromandel-1-h-otama-be",
-      "dayId": "@key:xl:day:2026-12-20",
-      "stopId": null,
-      "title": "Reise & Strandtag",
-      "amount": 272879,
-      "currency": "EUR",
-      "paidBy": "",
-      "splitBetween": [],
-      "note": "https://checkout.lodgify.com/paradise-camping/272879/room?currency=EUR&arrival=2026-12-19&departure=2026-12-20&adults=2&_gl=1*1qbhbnz*_ga*MTE2NDAzOTYwMC4xNzg4MDMyNjkx*_ga_PS45765VJ6*czE3ODgwMzI2OTAkbzEkZzAkdDE3ODgwMzI2OTUkajU1JGwwJGgw&_ga=2.194815076.854987230.1788032695-1164039600.1788032691&roomId=333325"
     }
   },
   {
@@ -448,7 +434,7 @@
       "time": "",
       "duration": "",
       "links": [],
-      "booking": "offen",
+      "booking": "",
       "camp": {
         "type": ""
       }
@@ -462,7 +448,7 @@
       "dayId": "@key:xl:day:2026-12-21",
       "stopId": null,
       "title": "Hobbiton Tour, Reise & Blue springs",
-      "amount": 68,
+      "amount": null,
       "currency": "EUR",
       "paidBy": "",
       "splitBetween": [],
@@ -516,7 +502,7 @@
       "scope": "main",
       "kind": "campsite",
       "name": "motutere top 10 holiday park",
-      "notes": "",
+      "notes": "Übernachtungskosten pro Person (Excel): 25.5",
       "time": "",
       "duration": "",
       "links": [],
@@ -533,7 +519,7 @@
       "key": "xl:price:2026-12-22:campsite-wai-o-tapu-thermal-wo",
       "dayId": "@key:xl:day:2026-12-22",
       "stopId": null,
-      "title": "Thermal Wonderlands",
+      "title": "motutere top 10 holiday park",
       "amount": 51,
       "currency": "EUR",
       "paidBy": "",
@@ -590,7 +576,7 @@
       "scope": "main",
       "kind": "campsite",
       "name": "Motuoapa bay holiday park",
-      "notes": "",
+      "notes": "Übernachtungskosten pro Person (Excel): 75",
       "time": "",
       "duration": "",
       "links": [],
@@ -738,8 +724,8 @@
       "key": "xl:price:2026-12-25:taupo-tama-lakes-umakarikari-e",
       "dayId": "@key:xl:day:2026-12-25",
       "stopId": null,
-      "title": "größere Wanderung",
-      "amount": 4,
+      "title": "Motuoapa bay holiday park",
+      "amount": 150,
       "currency": "EUR",
       "paidBy": "",
       "splitBetween": [],
@@ -780,7 +766,7 @@
       "time": "",
       "duration": "",
       "links": [],
-      "booking": "offen",
+      "booking": "",
       "camp": {
         "type": "freedom"
       }
@@ -908,6 +894,11 @@
       "key": "xl:day:2026-12-29",
       "date": "2026-12-29",
       "title": "Picton -> Campingplatz (the barn cabins & camp) (3 h)",
+      "extraTravel": {
+        "minutes": 60,
+        "note": "Fahrzeug-Check-in vor der Fähre einplanen; genaue Frist in der Buchung prüfen.",
+        "source": "https://www.bluebridge.co.nz/check-in/"
+      },
       "times": "Abfahrt Fähre Wellington 08:45 · Ankunft Fähre Picton 12:15",
       "notes": "keine Deadline für check in :)",
       "shower": {
@@ -982,7 +973,7 @@
       "scope": "main",
       "kind": "campsite",
       "name": "Abel Tasman Campingplatz gebucht (Theresa): The barn cabins & camp",
-      "notes": "",
+      "notes": "Übernachtungskosten pro Person (Excel): 90",
       "time": "",
       "duration": "",
       "links": [],
@@ -999,7 +990,7 @@
       "key": "xl:price:2026-12-29:picton-campingplatz-the-barn-c",
       "dayId": "@key:xl:day:2026-12-29",
       "stopId": null,
-      "title": "Evtl. noch zur Coquille bay laufen (48 min vom Campingplatz aus )",
+      "title": "Abel Tasman Campingplatz gebucht (Theresa): The barn cabins & camp",
       "amount": 360,
       "currency": "NZD",
       "paidBy": "",
@@ -1112,7 +1103,7 @@
       "scope": "main",
       "kind": "campsite",
       "name": "Collingwood Campingplatz gebucht (Theresa)",
-      "notes": "",
+      "notes": "Übernachtungskosten pro Person (Excel): 20",
       "time": "",
       "duration": "",
       "links": [],
@@ -1129,7 +1120,7 @@
       "key": "xl:price:2026-12-31:abel-tasman-nationalpark-colli",
       "dayId": "@key:xl:day:2026-12-31",
       "stopId": null,
-      "title": "Fahrt zu einer weiteren Bucht (WASSER-TAXIS) / (Sarah war an der Bark Bay) / danach Weiterfahrt zum Collingwood Holiday park Campingplatz",
+      "title": "Collingwood Campingplatz gebucht (Theresa)",
       "amount": 40,
       "currency": "EUR",
       "paidBy": "",
@@ -1478,7 +1469,7 @@
       "scope": "main",
       "kind": "campsite",
       "name": "Hampshire Holiday Parks - Arrowtown",
-      "notes": "(gebucht: Jonas)",
+      "notes": "(gebucht: Jonas)\n\nÜbernachtungskosten pro Person (Excel): 19",
       "time": "",
       "duration": "",
       "links": [],
@@ -1495,7 +1486,7 @@
       "key": "xl:price:2027-01-06:lindis-pass-historic-hotel-wan",
       "dayId": "@key:xl:day:2027-01-06",
       "stopId": null,
-      "title": "Wanderung: Roys Peak Track (15 km; 1.200 hm; 5,5 h)",
+      "title": "Hampshire Holiday Parks - Arrowtown / (gebucht: Jonas)",
       "amount": 38,
       "currency": "EUR",
       "paidBy": "",
@@ -1557,7 +1548,7 @@
       "scope": "main",
       "kind": "campsite",
       "name": "Te Anau Lakeview holiday park (Sarah)",
-      "notes": "",
+      "notes": "Übernachtungskosten pro Person (Excel): 39.25",
       "time": "",
       "duration": "",
       "links": [],
@@ -1574,7 +1565,7 @@
       "key": "xl:price:2027-01-07:arrowtown-lake-hayes-spazierga",
       "dayId": "@key:xl:day:2027-01-07",
       "stopId": null,
-      "title": "Wanderung:  Blick auf den Hayes-See (9km, 80 hm, 2h)",
+      "title": "Te Anau Lakeview holiday park (Sarah)",
       "amount": 157,
       "currency": "NZD",
       "paidBy": "",
@@ -1745,6 +1736,11 @@
       "key": "xl:day:2027-01-10",
       "date": "2027-01-10",
       "title": "Milford Sound reinfahren",
+      "extraTravel": {
+        "minutes": 40,
+        "note": "Homer-Tunnel: Puffer von bis zu 20 Minuten je Richtung bei Ampelbetrieb; tatsächliche Wartezeit und Verkehrslage prüfen.",
+        "source": "https://www.bestdrivingroads.com/roads/milford-road/"
+      },
       "times": "",
       "notes": "hooker trail -> Wanderung noch raussuchen\nkönnte überlaufen sein",
       "shower": {
@@ -1850,7 +1846,7 @@
       "scope": "main",
       "kind": "campsite",
       "name": "Hampshire Holiday Parks - Queenstown",
-      "notes": "",
+      "notes": "Übernachtungskosten pro Person (Excel): 32.5",
       "time": "",
       "duration": "",
       "links": [],
@@ -1867,7 +1863,7 @@
       "key": "xl:price:2027-01-11:cascade-creek-queenstown-freed",
       "dayId": "@key:xl:day:2027-01-11",
       "stopId": null,
-      "title": "Reisetag + Queenstown",
+      "title": "Hampshire Holiday Parks - Queenstown",
       "amount": 130,
       "currency": "NZD",
       "paidBy": "",
@@ -2102,7 +2098,7 @@
       "scope": "main",
       "kind": "campsite",
       "name": "South Brighton Holiday park",
-      "notes": "",
+      "notes": "Übernachtungskosten pro Person (Excel): 13.75",
       "time": "",
       "duration": "",
       "links": [],
@@ -2124,7 +2120,22 @@
       "currency": "NZD",
       "paidBy": "",
       "splitBetween": [],
-      "note": "280 Dollar / 2 Personen\n\nCampsite: 55 Dollar / 2 Personen"
+      "note": "280 Dollar / 2 Personen"
+    }
+  },
+  {
+    "type": "expense",
+    "data": {
+      "id": "",
+      "key": "xl:price:2027-01-15:akaroa-delfintour-bis-ca-13-00:2",
+      "dayId": "@key:xl:day:2027-01-15",
+      "stopId": null,
+      "title": "South Brighton Holiday park",
+      "amount": 55,
+      "currency": "NZD",
+      "paidBy": "",
+      "splitBetween": [],
+      "note": "Campsite: 55 Dollar / 2 Personen"
     }
   },
   {
@@ -2191,7 +2202,7 @@
       "scope": "main",
       "kind": "accommodation",
       "name": "Bed & Breakfast in the Heart of Fedalton",
-      "notes": "Check in ab 14:00 bis 23:30\nGebucht über Booking (Theresa)",
+      "notes": "Check in ab 14:00 bis 23:30\nGebucht über Booking (Theresa)\n\nÜbernachtungskosten pro Person (Excel): 47.5",
       "time": "",
       "duration": "",
       "links": [],
@@ -2206,7 +2217,7 @@
       "key": "xl:price:2027-01-16:unterkunft-christchurch-bed-br",
       "dayId": "@key:xl:day:2027-01-16",
       "stopId": null,
-      "title": "✓ Check-in von 14:00 bis 23:30 / ✓ Check-out bis 10:00",
+      "title": "Bed & Breakfast in the Heart of Fedalton",
       "amount": 95,
       "currency": "EUR",
       "paidBy": "",
@@ -2315,7 +2326,7 @@
       "scope": "main",
       "kind": "accommodation",
       "name": "Hotel Mi Rochor",
-      "notes": "Check in 24/7",
+      "notes": "Check in 24/7\n\nÜbernachtungskosten pro Person (Excel): 160.5",
       "time": "",
       "duration": "",
       "links": [],
@@ -2334,7 +2345,7 @@
       "key": "xl:price:2027-01-18:singapur-hotel-mi-rochor",
       "dayId": "@key:xl:day:2027-01-18",
       "stopId": null,
-      "title": "Lichtershow an der Marina Bay SAnds (20:00 und 21:00) -> Empfehlung Jakob & Berni",
+      "title": "Hotel Mi Rochor",
       "amount": 321,
       "currency": "EUR",
       "paidBy": "",

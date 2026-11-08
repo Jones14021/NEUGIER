@@ -2,23 +2,29 @@
 // - App-Shell (HTML/JS/CSS): stale-while-revalidate
 // - API-GETs: network-first, Fallback Cache
 // - Fotos & Google-Maps-Kacheln: cache-first (begrenzt)
-const VERSION = 'v1';
+const VERSION = '__APP_VERSION__';
 const SHELL = `neugier-shell-${VERSION}`;
-const DATA = `neugier-data-${VERSION}`;
-const MEDIA = `neugier-media-${VERSION}`;
+const DATA = 'neugier-data-v1';
+const MEDIA = 'neugier-media-v1';
+const BUILD_ASSETS = ["__BUILD_ASSETS__"];
 const MAX_MEDIA = 1500;
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(SHELL).then((c) => c.addAll(['/', '/manifest.webmanifest', '/icon.svg'])));
-  self.skipWaiting();
+  e.waitUntil(caches.open(SHELL).then((c) => c.addAll(['/', '/manifest.webmanifest', '/icon.svg', ...BUILD_ASSETS])).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('message', (e) => {
+  if (e.data?.type === 'SKIP_WAITING') e.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => !k.endsWith(VERSION)).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim()),
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('neugier-shell-') && k !== SHELL).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
+      .then((clients) => { for (const client of clients) void client.navigate(client.url).catch(() => {}); }),
   );
 });
 

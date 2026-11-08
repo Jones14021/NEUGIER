@@ -35,6 +35,7 @@ export async function parseExcel(buf: Buffer, opts: { startDate?: string; curren
       price: row.getCell(9).value,
       priceText: text(row.getCell(9)),
       priceLink: link(row.getCell(9)),
+      overnightPerPerson: numericValue(row.getCell(10)),
     };
     if (!r.title && !r.act && !r.camp) return;
     r.date = r.date || lastDate;
@@ -98,7 +99,8 @@ export async function parseExcel(buf: Buffer, opts: { startDate?: string; curren
       const accommodation = !r.camp && r.act ? /\(([^)]*(?:hotel|bed\s*&\s*breakfast|b\s*&\s*b)[^)]*)\)/i.exec(r.title) : null;
       if (accommodation) {
         const name = oneLine(accommodation[1]);
-        const s = stop(uniqueKey(`xl:stay:${date}:${slug}`), dayKey, 100 + order++, 'accommodation', name, r.details, '');
+        const perPerson = r.overnightPerPerson == null ? '' : `Übernachtungskosten pro Person (Excel): ${r.overnightPerPerson}`;
+        const s = stop(uniqueKey(`xl:stay:${date}:${slug}`), dayKey, 100 + order++, 'accommodation', name, [r.details, perPerson].filter(Boolean).join('\n\n'), '');
         s.booking = /gebucht/i.test(r.details) ? 'gebucht' : '';
         if (/\b(?:in the heart of|im herzen von)\b/i.test(name)) s.geoFailed = true;
         if (r.detailsLink) s.links = [r.detailsLink];
@@ -106,26 +108,29 @@ export async function parseExcel(buf: Buffer, opts: { startDate?: string; curren
       }
       if (r.camp) {
         const [name, ...rest] = r.camp.split('\n');
-        const s = stop(uniqueKey(`xl:camp:${date}`), dayKey, 100 + order++, 'campsite', name, rest.join('\n').trim(), '');
+        const perPerson = r.overnightPerPerson == null ? '' : `Übernachtungskosten pro Person (Excel): ${r.overnightPerPerson}`;
+        const s = stop(uniqueKey(`xl:camp:${date}`), dayKey, 100 + order++, 'campsite', name, [rest.join('\n').trim(), perPerson].filter(Boolean).join('\n\n'), '');
         s.camp = { type: campType(r.camp) };
-        s.booking = /gebucht/i.test(r.camp) ? 'gebucht' : /buchen/i.test(r.camp + r.details) ? 'offen' : '';
-        const links = [r.detailsLink].filter(Boolean) as string[];
+        s.booking = /nicht\s+gebucht|ungebucht/i.test(r.camp) ? 'offen' : /gebucht/i.test(r.camp) ? 'gebucht' : /buchen/i.test(r.camp) || /campingplatz\s+buchen/i.test(r.details) ? 'offen' : '';
+        const links = [r.detailsLink, /^https?:\/\//i.test(r.priceText) ? r.priceLink : undefined].filter(Boolean) as string[];
         if (links.length) s.links = links;
         out.push({ type: 'stop', data: s });
       }
-      if (r.priceText) {
-        const amount = typeof r.price === 'number' ? r.price : parseAmount(r.priceText);
+      const prices = parsePrices(r.price, r.priceText);
+      for (const [priceIndex, price] of prices.entries()) {
+        const isStay = !!accommodation || (!!r.camp && (priceIndex > 0 || (prices.length === 1 && !r.priceLink && (r.overnightPerPerson != null || /campingplatz|campsite/i.test(r.priceText)))));
+        const label = isStay ? accommodation?.[1] ?? r.camp : r.act || r.title;
         const e: Expense = {
           id: '',
           key: uniqueKey(`xl:price:${date}:${slug}`),
           dayId: `${REF}${dayKey}`,
           stopId: null,
-          title: oneLine(r.camp && !r.act ? r.camp : r.act || r.title),
-          amount,
-          currency: /dollar/i.test(r.priceText) ? 'NZD' : opts.currency,
+          title: oneLine(label),
+          amount: price.amount,
+          currency: price.currency === 'dollar' ? 'NZD' : opts.currency,
           paidBy: '',
           splitBetween: [],
-          note: [r.priceText.startsWith('http') ? '' : r.priceText, r.priceLink ?? ''].filter(Boolean).join('\n'),
+          note: [price.note, priceIndex === 0 ? r.priceLink ?? '' : ''].filter(Boolean).join('\n'),
         };
         out.push({ type: 'expense', data: e });
       }
@@ -174,6 +179,7 @@ interface Row {
   price: ExcelJS.CellValue;
   priceText: string;
   priceLink?: string;
+  overnightPerPerson: number | null;
 }
 
 function stop(
@@ -249,9 +255,24 @@ function campType(s: string): CampType {
   return '';
 }
 
-function parseAmount(s: string): number | null {
-  const m = /(\d+(?:[.,]\d+)?)/.exec(s);
-  return m ? Number(m[1].replace(',', '.')) : null;
+function numericValue(cell: ExcelJS.Cell): number | null {
+  const value = cell.value;
+  if (typeof value === 'number') return value;
+  if (value && typeof value === 'object' && 'result' in value && typeof value.result === 'number') return value.result;
+  return null;
+}
+
+function parsePrices(value: ExcelJS.CellValue, textValue: string): { amount: number | null; currency: string; note: string }[] {
+  if (typeof value === 'number') return [{ amount: value, currency: '', note: textValue }];
+  if (/^https?:\/\//i.test(textValue)) return [];
+  const matches = [...textValue.matchAll(/(\d+(?:[.,]\d+)?)\s*(Euro|EUR|€|Dollar|NZD)/gi)];
+  return matches.map((match, index) => {
+    const lineStart = textValue.lastIndexOf('\n', match.index) + 1;
+    const lineEnd = textValue.indexOf('\n', match.index);
+    const note = textValue.slice(lineStart, lineEnd < 0 ? undefined : lineEnd).trim();
+    const perPerson = /(?:\/|pro)\s*person\b/i.test(note);
+    return { amount: perPerson ? null : Number(match[1].replace(',', '.')), currency: /dollar|nzd/i.test(match[2]) ? 'dollar' : '', note: matches.length === 1 ? textValue : note };
+  });
 }
 
 export function slugify(s: string): string {

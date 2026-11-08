@@ -9,7 +9,7 @@ export interface User {
   createdAt: string;
 }
 
-export type EntityType = 'trip' | 'day' | 'stop' | 'expense' | 'memory' | 'comment';
+export type EntityType = 'trip' | 'day' | 'stop' | 'expense' | 'memory' | 'comment' | 'todo';
 
 export interface BaseEntity {
   id: string;
@@ -52,6 +52,7 @@ export interface Day extends BaseEntity {
   /** Duschen wird getrennt vom Campen geplant. */
   shower: { status: ShowerStatus; note: string };
   facilities?: Facilities;
+  extraTravel?: { minutes: number; note: string; source?: string };
   /** URL des Titelbilds (Upload oder aus Erinnerungen). */
   cover?: string;
 }
@@ -123,6 +124,15 @@ export interface Comment extends BaseEntity {
   createdAt: string;
 }
 
+export interface Todo extends BaseEntity {
+  dayId: string | null;
+  targetId: string | null;
+  targetType: 'day' | 'stop' | 'comment' | null;
+  title: string;
+  done: boolean;
+  createdAt: string;
+}
+
 export interface EntityMap {
   trip: Trip;
   day: Day;
@@ -130,6 +140,7 @@ export interface EntityMap {
   expense: Expense;
   memory: Memory;
   comment: Comment;
+  todo: Todo;
 }
 
 export type AnyEntity = EntityMap[EntityType];
@@ -168,6 +179,7 @@ export interface TripState {
   expenses: Expense[];
   memories: Memory[];
   comments: Comment[];
+  todos?: Todo[];
 }
 
 export interface LiveLocation {
@@ -186,6 +198,7 @@ export interface TripExport {
   expenses: Expense[];
   memories: Memory[];
   comments: Comment[];
+  todos?: Todo[];
 }
 
 export interface AppConfig {

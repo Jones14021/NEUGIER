@@ -4,6 +4,7 @@ import type { Change, LiveLocation, Role, TripState } from '@neugier/shared';
 import { canSeePlanning } from '@neugier/shared';
 import { viewerState } from './api';
 import { userFromCookieHeader } from './auth';
+import { isGeocoding } from './maps';
 import { events, getState } from './store';
 
 interface Client {
@@ -47,6 +48,7 @@ export function attachRealtime(server: Server): void {
           client.dayId = msg.dayId ?? null;
           if (prev && prev !== client.tripId) presence(prev);
           if (client.tripId) presence(client.tripId);
+          if (client.tripId) send(client.ws, { type: 'geocoding', active: isGeocoding(client.tripId) });
         }
       } catch {
         /* ignore */
@@ -60,10 +62,18 @@ export function attachRealtime(server: Server): void {
 
   events.on('change', ({ tripId, changes }: { tripId: string; changes: Change[] }) => {
     let viewerSnapshot: TripState | null | undefined;
+    let todos: TripState['todos'] | undefined;
+    const regular = changes.filter((change) => change.type !== 'todo');
+    const hasTodos = regular.length !== changes.length;
     for (const c of clients) {
       if (c.tripId !== tripId) continue;
-      if (canSeePlanning(c.role)) send(c.ws, { type: 'changes', changes });
-      else {
+      if (canSeePlanning(c.role)) {
+        if (regular.length) send(c.ws, { type: 'changes', changes: regular });
+        if (hasTodos) {
+          todos ??= getState(tripId)?.todos ?? [];
+          send(c.ws, { type: 'todos', todos });
+        }
+      } else if (regular.length) {
         // Zuschauer bekommen statt Einzeländerungen den gefilterten Gesamtstand
         viewerSnapshot ??= (() => {
           const s = getState(tripId);
@@ -78,6 +88,10 @@ export function attachRealtime(server: Server): void {
     for (const client of clients) if (client.tripId === tripId) send(client.ws, { type: 'location', location });
   });
 
+  events.on('geocoding', ({ tripId, active }: { tripId: string; active: boolean }) => {
+    for (const client of clients) if (client.tripId === tripId) send(client.ws, { type: 'geocoding', active });
+  });
+
   events.on('database-restored', () => {
     for (const client of clients) client.ws.close(1012, 'database restored');
   });
@@ -85,7 +99,7 @@ export function attachRealtime(server: Server): void {
   // Keep-alive (Tailscale/Proxies schließen sonst inaktive Verbindungen)
   setInterval(() => {
     for (const c of clients) if (c.ws.readyState === c.ws.OPEN) c.ws.ping();
-  }, 30000);
+  }, 30000).unref();
 }
 
 function send(ws: WebSocket, msg: unknown): void {

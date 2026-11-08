@@ -3,10 +3,12 @@ import { MessageSquare, Pencil } from 'lucide-react';
 import type { Comment } from '@neugier/shared';
 import { api } from '../api';
 import { useTrip } from '../store';
+import { TodoButton } from './TodoButton';
 
 export function Comments({ targetId, compact }: { targetId: string; compact?: boolean }) {
   const { state, toast, canEdit } = useTrip();
   const list = state.comments.filter((c) => c.targetId === targetId).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const dayId = state.days.find((day) => day.id === targetId)?.id ?? state.stops.find((stop) => stop.id === targetId)?.dayId ?? null;
   const [open, setOpen] = useState(!compact);
   const [text, setText] = useState('');
   const [edit, setEdit] = useState<Comment | null>(null);
@@ -39,7 +41,7 @@ export function Comments({ targetId, compact }: { targetId: string; compact?: bo
             </button>
           </div>
         ) : (
-          <div key={c.id} className="comment">
+          <div key={c.id} className={`comment${(state.todos ?? []).some((todo) => !todo.done && todo.targetType === 'comment' && todo.targetId === c.id) ? ' has-todo' : ''}`}>
             <span className="small">
               <strong>{c.author}</strong> {c.text}
               {c.updatedBy && c.updatedBy !== c.author && <span className="muted"> (bearb. {c.updatedBy})</span>}
@@ -47,6 +49,7 @@ export function Comments({ targetId, compact }: { targetId: string; compact?: bo
             {canEdit && <button className="icon-btn" title="Bearbeiten (leer = löschen)" onClick={() => setEdit(c)}>
               <Pencil size={14} />
             </button>}
+            {canEdit && <TodoButton dayId={dayId} targetId={c.id} targetType="comment" initialTitle={c.text} />}
           </div>
         ),
       )}
