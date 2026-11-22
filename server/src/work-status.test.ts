@@ -47,3 +47,22 @@ test('identical route requests share work while changed routes remain independen
     assert.equal((await playground).legs[0].durationSec, 20);
   } finally { globalThis.fetch = original; }
 });
+
+test('expenses sort by latest edit or trip date without mutating the source', async () => {
+  const modulePath = '../../web/src/pages/Expenses';
+  const { sortExpenses, removeTravelerOps } = await import(modulePath);
+  const expenses = [
+    { id: 'early', dayId: 'first', updatedAt: '2026-01-01T10:00:00Z' },
+    { id: 'late', dayId: 'second', updatedAt: '2026-01-03T10:00:00Z' },
+    { id: 'undated', dayId: null, updatedAt: '2026-01-02T10:00:00Z' },
+  ];
+  const days = [{ id: 'first', date: '2026-01-01' }, { id: 'second', date: '2026-01-02' }];
+  assert.deepEqual(sortExpenses(expenses, days, 'updated').map((expense: { id: string }) => expense.id), ['late', 'undated', 'early']);
+  assert.deepEqual(sortExpenses(expenses, days, 'date').map((expense: { id: string }) => expense.id), ['early', 'late', 'undated']);
+  assert.deepEqual(expenses.map((expense) => expense.id), ['early', 'late', 'undated']);
+  const ops = removeTravelerOps({ id: 'trip', members: ['Alice', 'Bob'] }, [{ id: 'shared', splitBetween: [] }, { id: 'explicit', splitBetween: ['Alice'] }], 'Bob');
+  assert.deepEqual(ops, [
+    { op: 'update', type: 'trip', id: 'trip', patch: { members: ['Alice'] } },
+    { op: 'update', type: 'expense', id: 'shared', patch: { splitBetween: ['Alice', 'Bob'] } },
+  ]);
+});
