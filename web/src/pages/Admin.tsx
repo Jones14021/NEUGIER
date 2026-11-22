@@ -86,8 +86,8 @@ export function Admin() {
         <div className="card highlight">
           <h3>Warten auf Freigabe ({pending.length})</h3>
           {pending.map((u) => (
-            <div key={u.id} className="row wrap user-row">
-              <span className="grow">
+            <div key={u.id} className="row wrap user-row user-row-pending">
+              <span className="grow user-identity">
                 <strong>{u.name}</strong> <span className="small muted">{u.email}</span>
               </span>
               <button className="btn small" onClick={() => setRole(u, 'viewer')}>
@@ -105,13 +105,13 @@ export function Admin() {
         <h3>Nutzer</h3>
         <p className="small muted">Zuschauer: nur lesen. Mitarbeiter: planen & bearbeiten. Admin: zusätzlich Nutzer & Einstellungen.</p>
         {users.map((u) => (
-          <div key={u.id} className="row user-row">
+          <div key={u.id} className="user-row user-row-account">
             {u.picture ? <img className="avatar" src={u.picture} alt="" /> : <span className="avatar ph">{u.name[0]}</span>}
-            <span className="grow">
+            <div className="user-identity">
               <strong>{u.name}</strong>
               <div className="small muted">{u.email}</div>
-            </span>
-            <select value={u.role} disabled={u.id === me.id} onChange={(e) => setRole(u, e.target.value as Role)}>
+            </div>
+            <select aria-label={`Rolle für ${u.name}`} value={u.role} disabled={u.id === me.id} onChange={(e) => setRole(u, e.target.value as Role)}>
               {(Object.keys(ROLE_LABEL) as Role[]).map((r) => (
                 <option key={r} value={r}>
                   {ROLE_LABEL[r]}
@@ -119,7 +119,7 @@ export function Admin() {
               ))}
             </select>
             {u.id !== me.id && (
-              <button className="icon-btn" onClick={() => remove(u)}>
+              <button className="icon-btn" title={`${u.name} entfernen`} aria-label={`${u.name} entfernen`} onClick={() => remove(u)}>
                 <Trash size={16} />
               </button>
             )}

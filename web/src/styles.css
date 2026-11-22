@@ -1554,8 +1554,36 @@ img.pickable:hover {
   padding: 8px 0;
   border-bottom: 1px solid var(--line);
 }
+.user-row-account {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) minmax(0, 11rem) 36px;
+  gap: 8px;
+  align-items: center;
+}
+.user-identity {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.user-identity strong {
+  display: block;
+}
+.user-row-pending .user-identity {
+  flex-basis: 200px;
+}
 .user-row select {
-  width: auto;
+  width: 100%;
+  min-width: 0;
+}
+@media (max-width: 480px) {
+  .user-row-account {
+    grid-template-columns: 36px minmax(0, 1fr) 36px;
+  }
+  .user-row-account .user-identity {
+    grid-column: 2 / 4;
+  }
+  .user-row-account select {
+    grid-column: 2;
+  }
 }
 .pool-item {
   display: flex;
