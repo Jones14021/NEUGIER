@@ -93,6 +93,22 @@ test('service worker does not intercept Google Maps JavaScript', () => {
   }
 });
 
+test('service worker never caches private conversation history', () => {
+  const source = fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../web/public/sw.js'), 'utf8');
+  const handlers: Record<string, (event: any) => void> = {};
+  const context = {
+    self: { addEventListener: (name: string, handler: (event: any) => void) => { handlers[name] = handler; } },
+    location: { origin: 'https://example.test' },
+    URL,
+  };
+  vm.runInNewContext(source, context);
+  for (const url of ['https://example.test/api/trips/trip/conversations', 'https://example.test/api/trips/trip/conversations/chat', 'https://example.test/api/admin/settings']) {
+    let intercepted = false;
+    handlers.fetch({ request: { method: 'GET', url }, respondWith: () => { intercepted = true; } });
+    assert.equal(intercepted, false);
+  }
+});
+
 test('service worker keeps cached build assets instead of revalidating them', async () => {
   const source = fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../web/public/sw.js'), 'utf8');
   const handlers: Record<string, (event: any) => void> = {};

@@ -144,6 +144,7 @@ export function api(): express.Router {
   });
   r.get('/admin/settings', requireRole('admin'), (_req, res) => {
     const s = llmSettings();
+    res.setHeader('Cache-Control', 'no-store');
     res.json({
       llmProvider: s.provider,
       llmBaseUrl: s.baseUrl,
@@ -151,16 +152,21 @@ export function api(): express.Router {
       llmApiKeySet: !!s.apiKey,
       webSearch: s.webSearchMode,
       searchApiKeySet: !!s.searchApiKey,
+      assistantPrompt: s.assistantPrompt,
+      podcastPrompt: s.podcastPrompt,
     });
   });
   r.put('/admin/settings', requireRole('admin'), (req, res) => {
-    const { llmProvider, llmBaseUrl, llmModel, llmApiKey, webSearch, searchApiKey } = req.body as Record<string, string | boolean | undefined>;
+    const { llmProvider, llmBaseUrl, llmModel, llmApiKey, webSearch, searchApiKey, assistantPrompt, podcastPrompt } = req.body as Record<string, string | boolean | undefined>;
+    if ([assistantPrompt, podcastPrompt].some((prompt) => prompt !== undefined && (typeof prompt !== 'string' || prompt.length > 20_000))) return res.status(400).json({ error: 'Prompt darf höchstens 20000 Zeichen enthalten' });
     if (llmProvider === 'copilot' || llmProvider === 'openai') setSetting('llm.provider', llmProvider);
     if (typeof llmBaseUrl === 'string') setSetting('llm.baseUrl', llmBaseUrl);
     if (typeof llmModel === 'string') setSetting('llm.model', llmModel);
     if (typeof llmApiKey === 'string' && llmApiKey) setSetting('llm.apiKey', llmApiKey);
     if (typeof webSearch === 'string') setSetting('llm.webSearch', webSearch);
     if (typeof searchApiKey === 'string' && searchApiKey) setSetting('search.apiKey', searchApiKey);
+    if (typeof assistantPrompt === 'string') setSetting('llm.systemPrompt', assistantPrompt.trim());
+    if (typeof podcastPrompt === 'string') setSetting('podcast.prompt', podcastPrompt.trim());
     res.json({ ok: true });
   });
 

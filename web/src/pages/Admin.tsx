@@ -12,6 +12,8 @@ interface Settings {
   llmApiKeySet: boolean;
   webSearch: 'off' | 'on' | 'tavily' | 'native';
   searchApiKeySet: boolean;
+  assistantPrompt: string;
+  podcastPrompt: string;
 }
 
 /** Admin: Rollen vergeben (Zuschauer/Mitarbeiter/Admin) und KI-Einstellungen. */
@@ -51,6 +53,8 @@ export function Admin() {
         llmApiKey: apiKey || undefined,
         webSearch: settings!.webSearch,
         searchApiKey: searchKey || undefined,
+        assistantPrompt: settings!.assistantPrompt,
+        podcastPrompt: settings!.podcastPrompt,
       },
     });
     setApiKey('');
@@ -170,6 +174,14 @@ export function Admin() {
           <label>
             Modell
             <input value={settings.llmModel} onChange={(e) => setSettings({ ...settings, llmModel: e.target.value })} />
+          </label>
+          <label>
+            Vorgabe für den KI-Assistenten
+            <textarea rows={4} maxLength={20000} value={settings.assistantPrompt} onChange={(e) => setSettings({ ...settings, assistantPrompt: e.target.value })} />
+          </label>
+          <label>
+            Vorgabe für Tagespodcasts
+            <textarea rows={4} maxLength={20000} value={settings.podcastPrompt} onChange={(e) => setSettings({ ...settings, podcastPrompt: e.target.value })} />
           </label>
           <label>
             {settings.llmProvider === 'copilot' ? 'GitHub-Token' : 'API-Key'} {settings.llmApiKeySet && <span className="badge green">hinterlegt</span>}

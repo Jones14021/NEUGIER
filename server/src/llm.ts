@@ -6,6 +6,9 @@ import { getSetting } from './db';
 
 export type LlmProvider = 'copilot' | 'openai';
 
+export const DEFAULT_ASSISTANT_PROMPT = 'Du bist ein hilfsbereiter Reiseplanungs-Assistent für einen Camper-Roadtrip. Antworte auf Deutsch, knapp und konkret.';
+export const DEFAULT_PODCAST_PROMPT = 'Erstelle einen unterhaltsamen, informativen deutschsprachigen Reisepodcast über die Stopps des Tages, die Region, ihre Geschichte und Kultur. Kennzeichne unsichere Informationen und erfinde keine Fakten.';
+
 export function llmSettings() {
   const provider = (getSetting('llm.provider') || config.llm.provider) as LlmProvider;
   const mode = (getSetting('llm.webSearch') || config.llm.webSearch) as 'off' | 'on' | 'tavily' | 'native';
@@ -17,6 +20,8 @@ export function llmSettings() {
     apiKey: getSetting('llm.apiKey') || config.llm.apiKey,
     webSearchMode: mode,
     searchApiKey,
+    assistantPrompt: getSetting('llm.systemPrompt') || DEFAULT_ASSISTANT_PROMPT,
+    podcastPrompt: getSetting('podcast.prompt') || DEFAULT_PODCAST_PROMPT,
     // Copilot: jeder Modus außer "off" nutzt die eingebaute Websuche
     webSearch: provider === 'copilot' ? mode !== 'off' : mode === 'native' || (mode === 'tavily' && !!searchApiKey),
   };
@@ -50,8 +55,7 @@ function tripContext(state: TripState, focusDayId?: string): string {
   return lines.join('\n');
 }
 
-const SYSTEM = `Du bist ein hilfsbereiter Reiseplanungs-Assistent für einen Camper-Roadtrip. Antworte auf Deutsch, knapp und konkret.
-Wenn du Änderungen an der Route vorschlägst (Zwischenstopps einfügen, verschieben, ändern, entfernen), gib sie ZUSÄTZLICH zum Text
+const PROPOSAL_RULES = `Wenn du Änderungen an der Route vorschlägst (Zwischenstopps einfügen, verschieben, ändern, entfernen), gib sie ZUSÄTZLICH zum Text
 als JSON-Block in folgendem Format aus (genau ein Block, in \`\`\`json ... \`\`\`):
 {"changes": [
   {"action":"add","date":"YYYY-MM-DD","afterStopId":"<id oder null>","stop":{"name":"...","kind":"campsite|accommodation|activity|hike|sight|food|shower|supply|transport|other","scope":"main|day","notes":"...","lat":-36.8,"lng":174.7,"address":"..."},"reason":"..."},
@@ -128,7 +132,7 @@ export async function chat(state: TripState, messages: ChatMessage[], focusDayId
 
   if (s.provider === 'copilot') {
     const useSearch = s.webSearchMode !== 'off';
-    const system = [SYSTEM, useSearch ? SEARCH_HINT.replace('"web_search"', '"web_search" (und "web_fetch" zum Lesen von Seiten)') : '', tripContext(state, focusDayId), mode === 'review' ? REVIEW_PROMPT : '']
+    const system = [s.assistantPrompt, PROPOSAL_RULES, useSearch ? SEARCH_HINT.replace('"web_search"', '"web_search" (und "web_fetch" zum Lesen von Seiten)') : '', tripContext(state, focusDayId), mode === 'review' ? REVIEW_PROMPT : '']
       .filter(Boolean)
       .join('\n\n');
     // Copilot-Sessions sind zustandslos pro Anfrage: Verlauf als Transkript mitgeben
@@ -144,7 +148,7 @@ export async function chat(state: TripState, messages: ChatMessage[], focusDayId
   const useNative = s.webSearchMode === 'native';
 
   const history: Msg[] = [
-    { role: 'system', content: [SYSTEM, useTavily || useNative ? SEARCH_HINT : ''].filter(Boolean).join('\n\n') },
+    { role: 'system', content: [s.assistantPrompt, PROPOSAL_RULES, useTavily || useNative ? SEARCH_HINT : ''].filter(Boolean).join('\n\n') },
     { role: 'system', content: tripContext(state, focusDayId) },
     ...(mode === 'review' ? [{ role: 'system', content: REVIEW_PROMPT }] : []),
     ...messages.slice(-20).map((m) => ({ role: m.role, content: m.content })),
