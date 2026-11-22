@@ -135,13 +135,21 @@ export function findToday(days: Day[]): Day | undefined {
 export function useOnline(): boolean {
   const [on, setOn] = useState(navigator.onLine);
   useEffect(() => {
-    const up = () => setOn(true);
-    const down = () => setOn(false);
-    addEventListener('online', up);
-    addEventListener('offline', down);
+    const check = () => setOn(navigator.onLine);
+    const timer = setInterval(check, 3000);
+    addEventListener('online', check);
+    addEventListener('offline', check);
+    addEventListener('focus', check);
+    addEventListener('pageshow', check);
+    document.addEventListener('visibilitychange', check);
+    check();
     return () => {
-      removeEventListener('online', up);
-      removeEventListener('offline', down);
+      clearInterval(timer);
+      removeEventListener('online', check);
+      removeEventListener('offline', check);
+      removeEventListener('focus', check);
+      removeEventListener('pageshow', check);
+      document.removeEventListener('visibilitychange', check);
     };
   }, []);
   return on;
