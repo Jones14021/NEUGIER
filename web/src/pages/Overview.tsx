@@ -36,7 +36,7 @@ type Overnight = { day: Day; index: number; camp: Stop & { lat: number; lng: num
  * aus Google Maps, Camper-Symbol an der aktuellen Position, zurückliegende Route blasser.
  */
 export function Overview() {
-  const { state, presence, canPlan, apply, liveSharing, setLiveSharing, geo } = useTrip();
+  const { state, user, presence, canPlan, apply, liveSharing, setLiveSharing, geo } = useTrip();
   const navigate = useNavigate();
   const days = useMemo(() => sortedDays(state.days), [state.days]);
   const today = findToday(days);
@@ -68,7 +68,7 @@ export function Overview() {
       .some((day) => state.stops.some((stop) => stop.dayId === day.id && isFlightStop(stop)));
     return { ...overnight.camp, id: overnight.day.id, routeBreakBefore };
   }), [overnights, days, state.stops]);
-  const route = useRoute(routePts, state.trip.region);
+  const route = useRoute(routePts, state.trip.region, true, user.id);
   const legByDay = useMemo(() => legsByDest(routePts, route), [routePts, route]);
 
   const planned = useMemo(() => plannedCamperStop(state, currentTripDate), [state, currentTripDate]);
@@ -184,6 +184,7 @@ export function Overview() {
             {days.length} Tage{totalSec > 0 && ` · ${fmtHours(totalSec)} Fahrt · ${fmtKm(totalM)}`}
           </span>
         </div>
+        {route?.stale && <p className="small muted" role="status">Fahrzeiten sind möglicherweise veraltet.</p>}
         <div className="day-list" ref={listRef}>
           {days.map((d, i) => (
             <DayCard

@@ -71,6 +71,13 @@ CREATE TABLE IF NOT EXISTS route_cache (
   hash TEXT PRIMARY KEY,
   data TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS route_cache_meta (
+  hash TEXT PRIMARY KEY,
+  origin TEXT NOT NULL,
+  destination TEXT NOT NULL,
+  updated_at INTEGER NOT NULL
+);
 `);
 
 export function getSetting(key: string): string | undefined {

@@ -34,7 +34,7 @@ const KEY = 'neugier.playground';
  * wie sich Fahrzeiten verschieben. Übernahme in die echte Planung einzeln oder komplett.
  */
 export function Playground() {
-  const { state: real, apply, toast, config } = useTrip();
+  const { state: real, user, apply, toast, config } = useTrip();
   const [params, setParams] = useSearchParams();
   // Entwurf = echte Planung + eigene Änderungen (so fließen Live-Änderungen anderer weiter ein)
   const [draftOps, setDraftOps] = useState<Op[]>(() => {
@@ -52,7 +52,7 @@ export function Playground() {
   const dayId = params.get('tag') ?? findToday(days)?.id ?? days[0]?.id;
   const idx = days.findIndex((d) => d.id === dayId);
   const day = days[idx];
-  const dm = useDayMap(draft, day, null, true);
+  const dm = useDayMap(draft, day, null, true, user.id);
   const changes = useMemo(() => diffPlans(real, draft), [real, draft]);
 
   const change = (ops: Op[]) => setDraftOps((d) => [...d, ...ops]);
@@ -142,12 +142,13 @@ export function Playground() {
             </button>
           </div>
 
-          <Timeline draft={draft} real={real} activeDay={day.id} onSelect={goto} />
+          <Timeline draft={draft} real={real} activeDay={day.id} owner={user.id} onSelect={goto} />
 
           <p className="small muted">
             {dm.totalSec > 0 ? `🚐 ${fmtHours(dm.totalSec)} Fahrzeit an diesem Tag` : dm.loading ? 'Fahrzeiten werden berechnet …' : ''}
             {' · '}Pins ziehen, Stopps umsortieren, Cafés einfügen – alles nur hier.
           </p>
+          {dm.stale && <p className="small muted" role="status">Fahrzeiten sind möglicherweise veraltet.</p>}
 
           {dm.start && (
             <div className="stop start">
@@ -245,13 +246,17 @@ export function Playground() {
 }
 
 /** Fahrzeiten aller Tage: echte Planung vs. Spielplatz (zeigt, wie sich alles verschiebt). */
-function Timeline({ draft, real, activeDay, onSelect }: { draft: TripState; real: TripState; activeDay: string; onSelect: (id: string) => void }) {
-  const legs = useOvernightLegs(draft);
-  const realLegs = useOvernightLegs(real);
+function Timeline({ draft, real, activeDay, owner, onSelect }: { draft: TripState; real: TripState; activeDay: string; owner: string; onSelect: (id: string) => void }) {
+  const draftRoute = useOvernightLegs(draft, owner);
+  const realRoute = useOvernightLegs(real, owner);
+  const legs = draftRoute.legs;
+  const realLegs = realRoute.legs;
   const days = sortedDays(draft.days);
   const realDates = new Map(real.days.map((d) => [d.id, d.date]));
   return (
-    <div className="timeline">
+    <>
+      {(draftRoute.stale || realRoute.stale) && <p className="small muted" role="status">Fahrzeiten sind möglicherweise veraltet.</p>}
+      <div className="timeline">
       {days.map((d, i) => {
         const sec = legs.get(d.id)?.durationSec ?? 0;
         const realSec = realLegs.get(d.id)?.durationSec ?? 0;
@@ -268,11 +273,12 @@ function Timeline({ draft, real, activeDay, onSelect }: { draft: TripState; real
           </button>
         );
       })}
-    </div>
+      </div>
+    </>
   );
 }
 
-function useOvernightLegs(s: TripState) {
+function useOvernightLegs(s: TripState, owner: string) {
   const pts = useMemo(
     () =>
       sortedDays(s.days).flatMap((d) => {
@@ -281,8 +287,9 @@ function useOvernightLegs(s: TripState) {
       }),
     [s.days, s.stops],
   );
-  const route = useRoute(pts, s.trip.region);
-  return useMemo(() => legsByDest(pts, route), [pts, route]);
+  const route = useRoute(pts, s.trip.region, true, owner);
+  const legs = useMemo(() => legsByDest(pts, route), [pts, route]);
+  return { legs, stale: !!route?.stale };
 }
 
 function ApplyDialog({ changes, onApply, onClose }: { changes: PlanChange[]; onApply: (c: PlanChange[]) => void; onClose: () => void }) {

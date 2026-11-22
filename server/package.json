@@ -12,6 +12,7 @@
   "dependencies": {
     "@github/copilot-sdk": "^1.0.29",
     "@neugier/shared": "*",
+    "compression": "^1.8.2",
     "exceljs": "^4.4.0",
     "express": "^5.3.0",
     "google-auth-library": "^11.3.3",
@@ -20,10 +21,12 @@
     "ws": "^8.22.1"
   },
   "devDependencies": {
+    "@types/compression": "^1.8.1",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.3.0",
     "@types/node": "^24.19.2",
     "@types/ws": "^8.18.2",
+    "fake-indexeddb": "^6.2.8",
     "typescript": "^7.0.2"
   }
 }

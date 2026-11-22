@@ -2,38 +2,119 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Day, RouteLeg, RouteResult, Stop } from '@neugier/shared';
 import { todayIso } from '@neugier/shared';
 import { api } from './api';
+import { lastRouteReset, makeCachedRoute, nextRouteReset, readCachedRoute, routeCacheId, saveCachedRoute, type CachedRoute } from './routeCache';
 
 type Pt = Pick<Stop, 'name' | 'lat' | 'lng' | 'placeId' | 'address'> & { routeBreakBefore?: boolean };
 
-const cache = new Map<string, RouteResult>();
+const cache = new Map<string, CachedRoute>();
+const pendingRoutes = new Map<string, Promise<RouteResult>>();
+
+function rememberRoute(key: string, route: CachedRoute) {
+  cache.delete(key);
+  cache.set(key, route);
+  if (cache.size > 30) cache.delete(cache.keys().next().value!);
+}
+
+export function routeKey(points: Pt[], region: string): string {
+  return JSON.stringify([region, points.map((point) => [
+    point.lat != null && point.lng != null ? ['coordinates', point.lat, point.lng]
+      : point.placeId ? ['place', point.placeId] : ['address', point.address || point.name],
+    !!point.routeBreakBefore,
+  ])]);
+}
+
+export function requestRoute(key: string, points: Pt[], region: string): Promise<RouteResult> {
+  const pending = pendingRoutes.get(key);
+  if (pending) return pending;
+  const body = points.map(({ name, lat, lng, placeId, address, routeBreakBefore }) => ({ name, lat, lng, placeId, address, routeBreakBefore }));
+  const request = api<RouteResult>('/maps/route', { body: { points: body, region }, signal: AbortSignal.timeout(30_000) })
+    .finally(() => pendingRoutes.delete(key));
+  pendingRoutes.set(key, request);
+  return request;
+}
 
 /** Autoroute über den Server (Google Routes API, etappenweise, serverseitig gecacht). */
-export function useRoute(points: Pt[], region: string, enabled = true): RouteResult | null {
+export function useRoute(points: Pt[], region: string, enabled = true, owner = ''): RouteResult | null {
   const key = useMemo(
-    () => JSON.stringify([region, points.map((p) => [p.lat, p.lng, p.placeId, p.lat == null ? p.address || p.name : '', p.routeBreakBefore])]),
+    () => routeKey(points, region),
     [points, region],
   );
+  const scopedKey = routeCacheId(owner, key);
   const [res, setRes] = useState<{ key: string; r: RouteResult } | null>(null);
   useEffect(() => {
-    if (!enabled || points.length < 2 || cache.has(key)) return;
+    if (!enabled || points.length < 2 || !owner) return;
     let alive = true;
-    const body = points.map(({ name, lat, lng, placeId, address, routeBreakBefore }) => ({ name, lat, lng, placeId, address, routeBreakBefore }));
-    api<RouteResult>('/maps/route', { body: { points: body, region } })
-      .then((r) => {
-        cache.set(key, r);
-        if (alive) setRes({ key, r });
-      })
-      .catch(() => {
-        if (alive) setRes({ key, r: { path: [], legs: points.slice(1).map(() => ({ distanceMeters: 0, durationSec: 0, path: [] })), fallback: true } });
-      });
+    let loading = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const schedule = (when: number) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => { void update(); }, Math.max(1000, Math.min(when - Date.now(), 60_000)));
+    };
+    const update = async () => {
+      if (!alive || loading) return;
+      loading = true;
+      let stored = cache.get(scopedKey);
+      const now = Date.now();
+      if (stored && (stored.storedAt < lastRouteReset(now) || stored.storedAt > now)) {
+        cache.delete(scopedKey);
+        stored = undefined;
+        setRes(null);
+      }
+      if (!stored) {
+        try { stored = await readCachedRoute(owner, key, now); } catch {}
+        const checkedAt = Date.now();
+        if (stored && (stored.storedAt < lastRouteReset(checkedAt) || stored.storedAt > checkedAt)) stored = undefined;
+        if (stored) rememberRoute(scopedKey, stored);
+      }
+      if (!alive) return;
+      if (stored) setRes({ key: scopedKey, r: { ...stored.result, stale: stored.freshUntil <= Date.now() } });
+      if (stored && stored.freshUntil > Date.now()) {
+        loading = false;
+        schedule(Math.min(stored.freshUntil, nextRouteReset(Date.now())));
+        return;
+      }
+      const requestedAt = Date.now();
+      try {
+        const route = await requestRoute(scopedKey, points, region);
+        if (!alive) return;
+        if (requestedAt < lastRouteReset(Date.now())) {
+          setRes(null);
+          loading = false;
+          schedule(Date.now() + 1000);
+          return;
+        }
+        const saved = makeCachedRoute(owner, key, route, requestedAt);
+        const expiredInTransit = !route.fallback && !route.stale && route.cacheTtlMs !== undefined && !saved;
+        if (!route.fallback || !stored) setRes({ key: scopedKey, r: expiredInTransit ? { ...route, stale: true } : route });
+        if (!route.fallback && !route.stale) {
+          if (saved) rememberRoute(scopedKey, saved);
+          try {
+            await saveCachedRoute(owner, key, route, requestedAt);
+          } catch {}
+        }
+      } catch {
+        if (alive && !stored) setRes({ key: scopedKey, r: { path: [], legs: points.slice(1).map(() => ({ distanceMeters: 0, durationSec: 0, path: [] })), fallback: true } });
+      }
+      loading = false;
+      const currentTime = Date.now();
+      const freshUntil = cache.get(scopedKey)?.freshUntil ?? 0;
+      if (alive) schedule(Math.min(freshUntil > currentTime ? freshUntil : currentTime + 60_000, nextRouteReset(currentTime)));
+    };
+    const check = () => { void update(); };
+    void update();
+    addEventListener('focus', check);
+    addEventListener('online', check);
     return () => {
       alive = false;
+      clearTimeout(timer);
+      removeEventListener('focus', check);
+      removeEventListener('online', check);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, enabled]);
+  }, [key, enabled, owner]);
   if (!enabled || points.length < 2) return null;
   // Nie ein Ergebnis für eine veraltete Punkteliste zurückgeben
-  return cache.get(key) ?? (res?.key === key ? res.r : null);
+  return res?.key === scopedKey ? res.r : null;
 }
 
 /** Etappe je Zielpunkt (Etappe k führt von points[k] nach points[k+1]). */

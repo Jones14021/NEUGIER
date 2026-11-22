@@ -32,6 +32,13 @@ test('viewers cannot write comments or trip data', async () => {
     await request(`/admin/users/${viewer.user.id}`, 'PUT', admin.cookie, { role: 'viewer' });
     const trip = await (await request('/trips', 'POST', admin.cookie, { name: 'Test' })).json() as { id: string };
     const prefix = `/trips/${trip.id}`;
+    const points = Array.from({ length: 200 }, (_, index) => ({ lat: index, lng: index, routeBreakBefore: true }));
+    const compressed = await fetch(`${base}/maps/route`, {
+      method: 'POST', headers: { cookie: viewer.cookie, 'content-type': 'application/json', 'accept-encoding': 'gzip' }, body: JSON.stringify({ points }),
+    });
+    assert.equal(compressed.status, 200);
+    assert.equal(compressed.headers.get('content-encoding'), 'gzip');
+    assert.equal(((await compressed.json()) as { legs: unknown[] }).legs.length, points.length - 1);
     assert.equal((await request(`${prefix}/comments`, 'POST', viewer.cookie, { targetId: trip.id, text: 'forbidden' })).status, 403);
     assert.equal((await request(`${prefix}/ops`, 'POST', viewer.cookie, { ops: [], label: 'forbidden' })).status, 403);
     const todo = { id: 'todo-test', dayId: null, targetId: null, targetType: null, title: 'Test', done: false, createdAt: new Date().toISOString() };

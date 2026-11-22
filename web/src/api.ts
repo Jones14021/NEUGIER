@@ -43,7 +43,7 @@ function workLabel(path: string): string {
   return '';
 }
 
-export async function api<T>(path: string, opts: { method?: string; body?: unknown; form?: FormData } = {}): Promise<T> {
+export async function api<T>(path: string, opts: { method?: string; body?: unknown; form?: FormData; signal?: AbortSignal } = {}): Promise<T> {
   const label = workLabel(path);
   const end = label ? beginWork(label) : undefined;
   try {
@@ -52,6 +52,7 @@ export async function api<T>(path: string, opts: { method?: string; body?: unkno
     headers: opts.body ? { 'Content-Type': 'application/json' } : undefined,
     body: opts.form ?? (opts.body ? JSON.stringify(opts.body) : undefined),
     credentials: 'same-origin',
+    signal: opts.signal,
   });
     const isJson = r.headers.get('content-type')?.includes('json');
     const data = isJson ? await r.json() : await r.text();

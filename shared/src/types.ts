@@ -224,6 +224,8 @@ export interface RouteResult {
   legs: RouteLeg[];
   /** true = mindestens eine Etappe nur als Luftlinie (kein API-Key oder keine Route). */
   fallback: boolean;
+  cacheTtlMs?: number;
+  stale?: boolean;
 }
 
 /** Vom KI-Assistenten vorgeschlagene Änderung (wird im Diff angezeigt, nicht direkt angewendet). */

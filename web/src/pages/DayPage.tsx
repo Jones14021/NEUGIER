@@ -20,7 +20,7 @@ import { useTrip } from '../store';
 /** Tagesansicht: alle Stopps (Haupt- und Tagesroute) auf der Karte + Liste mit Navigation. */
 export function DayPage() {
   const { dayId } = useParams();
-  const { state, canEdit, apply, setFocusDay } = useTrip();
+  const { state, user, canEdit, apply, setFocusDay } = useTrip();
   const navigate = useNavigate();
   const days = useMemo(() => sortedDays(state.days), [state.days]);
   const idx = days.findIndex((d) => d.id === dayId);
@@ -38,7 +38,7 @@ export function DayPage() {
 
   useEffect(() => { setExtraMinutes(String(day?.extraTravel?.minutes ?? 0)); }, [day?.id, day?.extraTravel?.minutes]);
 
-  const dm = useDayMap(state, day, active, canEdit);
+  const dm = useDayMap(state, day, active, canEdit, user.id);
 
   if (!day) return <div className="center muted">Tag nicht gefunden</div>;
 
@@ -149,6 +149,7 @@ export function DayPage() {
           )}
           {dm.loading && <p className="small muted">Fahrzeiten werden berechnet …</p>}
           {dm.unavailable && <p className="small muted">Einige Fahrzeiten sind derzeit nicht verfügbar.</p>}
+          {dm.stale && <p className="small muted" role="status">Fahrzeiten sind möglicherweise veraltet.</p>}
           <div className="extra-travel">
             <label>Zusätzliche Fahrzeit (Minuten)<input type="number" min="0" max="1440" step="5" disabled={!canEdit} value={extraMinutes} onChange={(event) => setExtraMinutes(event.target.value)} onBlur={() => {
               const parsed = Number(extraMinutes);

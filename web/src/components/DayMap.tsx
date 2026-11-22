@@ -8,7 +8,7 @@ import { midpoint, type MapLabel, type MapMarker, type MapPath } from './MapView
  * Tagesroute (Start = Übernachtung Vortag, dann alle Stopps) inkl. Google-Fahrzeiten.
  * Wird von Tagesansicht und Spielplatz genutzt – im Spielplatz mit dem Entwurfsstand.
  */
-export function useDayMap(state: TripState, day: Day | undefined, activeId?: string | null, draggable = false) {
+export function useDayMap(state: TripState, day: Day | undefined, activeId?: string | null, draggable = false, owner = '') {
   const { start, stops } = useMemo(() => (day ? dayRoute(state, day) : { start: undefined, stops: [] as Stop[] }), [state, day]);
   const routePts = useMemo(() => {
     const flightDay = stops.some(isFlightStop);
@@ -16,7 +16,7 @@ export function useDayMap(state: TripState, day: Day | undefined, activeId?: str
       .filter((stop) => !flightDay || stop.kind !== 'transport' || /fähre|ferry/i.test(stop.name))
       .filter(hasCoords);
   }, [start, stops]);
-  const route = useRoute(routePts, state.trip.region, !!day);
+  const route = useRoute(routePts, state.trip.region, !!day, owner);
   const legs: Map<string, RouteLeg> = useMemo(() => legsByDest(routePts, route), [routePts, route]);
 
   const markers: MapMarker[] = useMemo(() => {
@@ -65,5 +65,5 @@ export function useDayMap(state: TripState, day: Day | undefined, activeId?: str
 
   const totalSec = route?.legs.reduce((a, l) => a + l.durationSec, 0) ?? 0;
   const totalM = route?.legs.reduce((a, l) => a + l.distanceMeters, 0) ?? 0;
-  return { start, stops, routePts, legs, markers, paths, labels, totalSec, totalM, loading: routePts.length > 1 && !route, unavailable: !!route?.fallback };
+  return { start, stops, routePts, legs, markers, paths, labels, totalSec, totalM, loading: routePts.length > 1 && !route, unavailable: !!route?.fallback, stale: !!route?.stale };
 }

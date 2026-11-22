@@ -11,7 +11,7 @@ test('geocoding retries API failures instead of marking stops as not found', asy
   process.env.GOOGLE_MAPS_SERVER_KEY = 'test-key';
   const { db } = await import('./db');
   const { applyOps, events, getState } = await import('./store');
-  const { computeRoute, geocodeMissing } = await import('./maps');
+  const { computeRoute, geocodeMissing, refreshRouteCache } = await import('./maps');
   const originalFetch = globalThis.fetch;
   try {
     const trip: Trip = { id: 'trip', name: 'Test', region: 'Neuseeland', startDate: '', endDate: '', currency: 'EUR', members: [], notes: '' };
@@ -68,6 +68,49 @@ test('geocoding retries API failures instead of marking stops as not found', asy
     const flightRoute = await computeRoute([points[0], { ...points[1], routeBreakBefore: true }], trip.region);
     assert.equal(flightRoute.legs[0].path?.length, 0);
     assert.equal(routeRequests, 1);
+
+    let finishRoute!: (response: Response) => void;
+    globalThis.fetch = async (_url, init) => {
+      routeRequests++;
+      assert.ok(init?.signal);
+      return new Promise<Response>((resolve) => { finishRoute = resolve; });
+    };
+    const newPoints = [points[0], { ...points[1], lat: -42 }];
+    const first = computeRoute(newPoints, trip.region);
+    const second = computeRoute(newPoints, trip.region);
+    assert.equal(routeRequests, 2);
+    finishRoute(Response.json({ routes: [{ distanceMeters: 1200, duration: '300s', polyline: { encodedPolyline: '_p~iF~ps|U_ulLnnqC_mqNvxq`@' } }] }));
+    assert.deepEqual(await first, await second);
+
+    db.prepare('UPDATE route_cache_meta SET updated_at = ?').run(Date.now() - 7 * 60 * 60 * 1000);
+    const routeReplies: ((response: Response) => void)[] = [];
+    globalThis.fetch = async () => {
+      routeRequests++;
+      return new Promise<Response>((resolve) => { routeReplies.push(resolve); });
+    };
+    const refresh = refreshRouteCache();
+    assert.equal(refreshRouteCache(), refresh);
+    for (const reply of routeReplies) reply(Response.json({ routes: [{ distanceMeters: 1500, duration: '400s', polyline: { encodedPolyline: '_p~iF~ps|U_ulLnnqC_mqNvxq`@' } }] }));
+    await refresh;
+    assert.equal(routeRequests, 4);
+    const refreshed = await computeRoute(points, trip.region);
+    assert.equal(refreshed.legs[0].durationSec, 400);
+    assert.ok(refreshed.cacheTtlMs! > 5 * 60 * 60 * 1000);
+    assert.equal(refreshed.stale, false);
+
+    db.prepare('UPDATE route_cache_meta SET updated_at = ?').run(Date.now() - 7 * 60 * 60 * 1000);
+    let failedRequests = 0;
+    globalThis.fetch = async () => { failedRequests++; return new Response('', { status: 503 }); };
+    const stale = await computeRoute(points, trip.region);
+    assert.equal(stale.legs[0].durationSec, 400);
+    assert.equal(stale.stale, true);
+    assert.equal(stale.cacheTtlMs, 0);
+    await computeRoute(points, trip.region);
+    assert.equal(failedRequests, 1);
+    db.exec('DELETE FROM route_cache_meta');
+    const legacy = await computeRoute(points, trip.region);
+    assert.equal(legacy.stale, true);
+    assert.equal((db.prepare('SELECT count(*) AS count FROM route_cache_meta').get() as { count: number }).count, 1);
   } finally {
     globalThis.fetch = originalFetch;
     db.close();

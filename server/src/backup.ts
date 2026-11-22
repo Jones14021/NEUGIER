@@ -30,6 +30,7 @@ export async function restoreDatabase(sourcePath: string, destinationPath: strin
       throw Object.assign(new Error(`Ungültige Sicherung: ${(error as Error).message}`), { status: 400 });
     }
     await backup(source, destinationPath);
+    current.exec('CREATE TABLE IF NOT EXISTS route_cache_meta (hash TEXT PRIMARY KEY, origin TEXT NOT NULL, destination TEXT NOT NULL, updated_at INTEGER NOT NULL)');
   } finally {
     source?.close();
   }

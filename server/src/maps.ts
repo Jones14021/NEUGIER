@@ -16,37 +16,96 @@ function coords(p: Pt): { lat: number; lng: number }[] {
   return p.lat != null && p.lng != null ? [{ lat: p.lat, lng: p.lng }] : [];
 }
 
-/** Eine Etappe A→B über die Google Routes API (gecacht). null = keine Straßenroute (z. B. Flug). */
-async function computeLeg(a: Pt, b: Pt, region: string): Promise<RouteLeg | null> {
+const ROUTE_TTL = 6 * 60 * 60 * 1000;
+const ROUTE_RETRY_DELAY = 5 * 60 * 1000;
+type CachedLeg = { leg: RouteLeg | null; updatedAt: number };
+const pendingLegs = new Map<string, Promise<CachedLeg | null>>();
+const retryAfter = new Map<string, number>();
+let refreshRun: Promise<void> | null = null;
+
+async function refreshLeg(hash: string, wa: unknown, wb: unknown, cached: CachedLeg | null): Promise<CachedLeg | null> {
+  const pending = pendingLegs.get(hash);
+  if (pending) return pending;
+  if (cached && (retryAfter.get(hash) ?? 0) > Date.now()) return cached;
+  const request = (async () => {
+    try {
+      const r = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': config.mapsServerKey,
+          'X-Goog-FieldMask': 'routes.polyline.encodedPolyline,routes.distanceMeters,routes.duration',
+        },
+        body: JSON.stringify({ origin: wa, destination: wb, travelMode: 'DRIVE', languageCode: 'de' }),
+        signal: AbortSignal.timeout(12_000),
+      });
+      if (!r.ok) {
+        console.warn('Routes API', r.status, (await r.text()).slice(0, 200));
+        retryAfter.set(hash, Date.now() + ROUTE_RETRY_DELAY);
+        return cached;
+      }
+      const data = (await r.json()) as {
+        routes?: { polyline: { encodedPolyline: string }; distanceMeters?: number; duration?: string }[];
+      };
+      const route = data.routes?.[0];
+      const leg: RouteLeg | null = route
+        ? { distanceMeters: route.distanceMeters ?? 0, durationSec: parseInt(route.duration ?? '0'), path: decodePolyline(route.polyline.encodedPolyline) }
+        : null;
+      const updatedAt = Date.now();
+      db.exec('BEGIN');
+      try {
+        db.prepare('INSERT OR REPLACE INTO route_cache (hash, data) VALUES (?, ?)').run(hash, JSON.stringify(leg));
+        db.prepare('INSERT OR REPLACE INTO route_cache_meta (hash, origin, destination, updated_at) VALUES (?, ?, ?, ?)').run(hash, JSON.stringify(wa), JSON.stringify(wb), updatedAt);
+        db.exec('COMMIT');
+      } catch (error) {
+        db.exec('ROLLBACK');
+        throw error;
+      }
+      retryAfter.delete(hash);
+      return { leg, updatedAt };
+    } catch (error) {
+      console.warn('Routes API:', (error as Error).message);
+      retryAfter.set(hash, Date.now() + ROUTE_RETRY_DELAY);
+      return cached;
+    }
+  })();
+  pendingLegs.set(hash, request);
+  try {
+    return await request;
+  } finally {
+    pendingLegs.delete(hash);
+  }
+}
+
+async function computeLeg(a: Pt, b: Pt, region: string): Promise<CachedLeg | null> {
   const wa = waypoint(a, region);
   const wb = waypoint(b, region);
   const hash = crypto.createHash('sha1').update(JSON.stringify(['leg', wa, wb])).digest('hex');
-  const cached = db.prepare('SELECT data FROM route_cache WHERE hash = ?').get(hash) as { data: string } | undefined;
-  if (cached) return JSON.parse(cached.data);
-
-  const r = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Goog-Api-Key': config.mapsServerKey,
-      'X-Goog-FieldMask': 'routes.polyline.encodedPolyline,routes.distanceMeters,routes.duration',
-    },
-    body: JSON.stringify({ origin: wa, destination: wb, travelMode: 'DRIVE', languageCode: 'de' }),
-  });
-  if (!r.ok) {
-    console.warn('Routes API', r.status, (await r.text()).slice(0, 200));
-    return null;
+  const row = db.prepare('SELECT route_cache.data, route_cache_meta.updated_at FROM route_cache LEFT JOIN route_cache_meta USING (hash) WHERE hash = ?').get(hash) as { data: string; updated_at: number | null } | undefined;
+  const cached = row ? { leg: JSON.parse(row.data) as RouteLeg | null, updatedAt: row.updated_at ?? 0 } : null;
+  if (cached && Date.now() - cached.updatedAt < ROUTE_TTL) return cached;
+  if (cached && row?.updated_at == null) {
+    db.prepare('INSERT OR IGNORE INTO route_cache_meta (hash, origin, destination, updated_at) VALUES (?, ?, ?, 0)').run(hash, JSON.stringify(wa), JSON.stringify(wb));
   }
-  const data = (await r.json()) as {
-    routes?: { polyline: { encodedPolyline: string }; distanceMeters?: number; duration?: string }[];
-  };
-  const route = data.routes?.[0];
-  const leg: RouteLeg | null = route
-    ? { distanceMeters: route.distanceMeters ?? 0, durationSec: parseInt(route.duration ?? '0'), path: decodePolyline(route.polyline.encodedPolyline) }
-    : null;
-  // Auch "keine Route" cachen, damit z. B. Flugetappen nicht immer wieder angefragt werden
-  db.prepare('INSERT OR REPLACE INTO route_cache (hash, data) VALUES (?, ?)').run(hash, JSON.stringify(leg));
-  return leg;
+  return refreshLeg(hash, wa, wb, cached);
+}
+
+export function refreshRouteCache(): Promise<void> {
+  if (!config.mapsServerKey) return Promise.resolve();
+  if (refreshRun) return refreshRun;
+  refreshRun = (async () => {
+    const rows = db.prepare('SELECT route_cache.hash, route_cache.data, route_cache_meta.origin, route_cache_meta.destination, route_cache_meta.updated_at FROM route_cache JOIN route_cache_meta USING (hash) WHERE updated_at <= ?').all(Date.now() - ROUTE_TTL) as { hash: string; data: string; origin: string; destination: string; updated_at: number }[];
+    for (let index = 0; index < rows.length; index += 6) {
+      await Promise.all(rows.slice(index, index + 6).map(async (row) => {
+        try {
+          await refreshLeg(row.hash, JSON.parse(row.origin), JSON.parse(row.destination), { leg: JSON.parse(row.data), updatedAt: row.updated_at });
+        } catch (error) {
+          console.warn('Routen-Cache:', (error as Error).message);
+        }
+      }));
+    }
+  })().finally(() => { refreshRun = null; });
+  return refreshRun;
 }
 
 /**
@@ -58,20 +117,23 @@ export async function computeRoute(points: Pt[], region: string): Promise<RouteR
   const pairs = points.slice(1).map((b, i) => [points[i], b] as const);
   const legs: RouteLeg[] = [];
   let fallback = !config.mapsServerKey;
+  let oldest = Infinity;
   // Begrenzte Parallelität, um API-Limits zu schonen
   for (let i = 0; i < pairs.length; i += 6) {
     const chunk = await Promise.all(
       pairs.slice(i, i + 6).map(async ([a, b]) => b.routeBreakBefore
-        ? { distanceMeters: 0, durationSec: 0, path: [] }
+        ? { leg: { distanceMeters: 0, durationSec: 0, path: [] }, updatedAt: Infinity }
         : (config.mapsServerKey ? computeLeg(a, b, region).catch(() => null) : null)),
     );
-    chunk.forEach((leg, j) => {
+    chunk.forEach((entry, j) => {
       const [a, b] = pairs[i + j];
-      if (!leg) fallback = true;
-      legs.push(leg ?? { distanceMeters: 0, durationSec: 0, path: [...coords(a), ...coords(b)] });
+      if (!entry?.leg) fallback = true;
+      if (entry) oldest = Math.min(oldest, entry.updatedAt);
+      legs.push(entry?.leg ?? { distanceMeters: 0, durationSec: 0, path: [...coords(a), ...coords(b)] });
     });
   }
-  return { path: legs.flatMap((l) => l.path ?? []), legs, fallback };
+  const cacheTtlMs = Number.isFinite(oldest) ? Math.min(ROUTE_TTL, Math.max(0, oldest + ROUTE_TTL - Date.now())) : ROUTE_TTL;
+  return { path: legs.flatMap((l) => l.path ?? []), legs, fallback, cacheTtlMs, stale: cacheTtlMs === 0 };
 }
 
 const geoRunning = new Set<string>();

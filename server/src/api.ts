@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { backup } from 'node:sqlite';
+import compression from 'compression';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import multer from 'multer';
 import type { AnyEntity, ChatMessage, Op, Role, Trip, TripExport, TripState, TypedEntity } from '@neugier/shared';
@@ -340,6 +341,7 @@ export function api(): express.Router {
   r.post(
     '/maps/route',
     requireRole('viewer'),
+    compression(),
     h(async (req, res) => res.json(await computeRoute(req.body.points ?? [], req.body.region ?? ''))),
   );
   r.get(
