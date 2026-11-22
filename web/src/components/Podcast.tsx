@@ -23,12 +23,43 @@ interface PodcastContextValue {
 
 const PodcastContext = createContext<PodcastContextValue | null>(null);
 
+export function createPodcastPlayback(audio: HTMLAudioElement, toast: (message: string) => void) {
+  let attempt = 0;
+  let activeSource: string | null = null;
+  return {
+    play(source: string, rate: number) {
+      const currentAttempt = ++attempt;
+      if (activeSource !== source || !audio.getAttribute('src') || audio.error) {
+        activeSource = source;
+        audio.pause();
+        audio.src = source;
+        audio.load();
+        audio.playbackRate = rate;
+      }
+      void audio.play().catch((error: unknown) => {
+        if (currentAttempt === attempt && !(error instanceof DOMException && error.name === 'AbortError')) toast('Podcast konnte nicht abgespielt werden.');
+      });
+    },
+    close() {
+      attempt++;
+      activeSource = null;
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+    },
+    mediaError() {
+      if (activeSource && audio.getAttribute('src') === activeSource && audio.error) toast('Podcast konnte nicht geladen werden.');
+    },
+  };
+}
+
 export function PodcastProvider({ children }: { children: ReactNode }) {
   const { state, user, toast } = useTrip();
   const [podcasts, setPodcasts] = useState<Record<string, PodcastInfo>>({});
   const [current, setCurrent] = useState<{ dayId: string; title: string } | null>(null);
   const [rate, setRate] = useState('1');
   const audio = useRef<HTMLAudioElement>(null);
+  const playback = useRef<ReturnType<typeof createPodcastPlayback> | null>(null);
   const tripId = state.trip.id;
 
   useEffect(() => {
@@ -43,11 +74,10 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const element = audio.current;
     if (!element) return;
-    element.pause();
-    element.removeAttribute('src');
-    element.load();
+    playback.current = createPodcastPlayback(element, toast);
     setCurrent(null);
-  }, [tripId, user.id]);
+    return () => { playback.current?.close(); playback.current = null; };
+  }, [tripId, user.id, toast]);
 
   useEffect(() => {
     if (!('mediaSession' in navigator) || typeof MediaMetadata === 'undefined' || !current) return;
@@ -69,12 +99,10 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
   const play = (dayId: string, title: string) => {
     const element = audio.current;
     if (!element) return;
-    if (current?.dayId !== dayId || !element.src) {
-      element.src = `/api/trips/${encodeURIComponent(tripId)}/podcasts/${encodeURIComponent(dayId)}/audio?v=${encodeURIComponent(podcasts[dayId]?.updatedAt ?? '')}`;
-      element.playbackRate = Number(rate);
-      setCurrent({ dayId, title });
-    }
-    void element.play().catch(() => toast('Podcast konnte nicht abgespielt werden.'));
+    playback.current ??= createPodcastPlayback(element, toast);
+    const source = `/api/trips/${encodeURIComponent(tripId)}/podcasts/${encodeURIComponent(dayId)}/audio?v=${encodeURIComponent(podcasts[dayId]?.updatedAt ?? '')}`;
+    playback.current.play(source, Number(rate));
+    if (current?.dayId !== dayId || current.title !== title) setCurrent({ dayId, title });
   };
 
   const regenerate = async (dayId: string) => {
@@ -87,8 +115,8 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
   };
 
   const player = <div className={`podcast-player${current ? '' : ' podcast-player-hidden'}`}>
-      {current && <div className="podcast-player-head"><span><Headphones size={16} /> {current.title} <span className="muted small">KI-Podcast</span></span><button className="icon-btn" type="button" title="Player schließen" aria-label="Player schließen" onClick={() => { audio.current?.pause(); audio.current?.removeAttribute('src'); audio.current?.load(); setCurrent(null); }}><X size={18} /></button></div>}
-      <div className="podcast-player-controls"><audio ref={audio} controls preload="none" onError={() => { if (current) toast('Podcast konnte nicht geladen werden.'); }} /><select aria-label="Wiedergabegeschwindigkeit" value={rate} onChange={(event) => { setRate(event.target.value); if (audio.current) audio.current.playbackRate = Number(event.target.value); }}><option value="0.75">0,75×</option><option value="1">1×</option><option value="1.25">1,25×</option><option value="1.5">1,5×</option><option value="2">2×</option></select></div>
+      {current && <div className="podcast-player-head"><span><Headphones size={16} /> {current.title} <span className="muted small">KI-Podcast</span></span><button className="icon-btn" type="button" title="Player schließen" aria-label="Player schließen" onClick={() => { playback.current?.close(); setCurrent(null); }}><X size={18} /></button></div>}
+      <div className="podcast-player-controls"><audio ref={audio} controls preload="none" onError={() => playback.current?.mediaError()} /><select aria-label="Wiedergabegeschwindigkeit" value={rate} onChange={(event) => { setRate(event.target.value); if (audio.current) audio.current.playbackRate = Number(event.target.value); }}><option value="0.75">0,75×</option><option value="1">1×</option><option value="1.25">1,25×</option><option value="1.5">1,5×</option><option value="2">2×</option></select></div>
       {current && !!podcasts[current.dayId]?.sources.length && <details className="podcast-sources"><summary>Quellen</summary>{podcasts[current.dayId].sources.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.title}</a>)}</details>}
     </div>;
   return <PodcastContext.Provider value={{ podcasts, play, regenerate, player }}>{children}</PodcastContext.Provider>;

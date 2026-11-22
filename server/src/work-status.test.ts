@@ -21,6 +21,48 @@ test('loading status tracks overlapping requests and clears on success or error'
   } finally { globalThis.fetch = original; }
 });
 
+test('podcast player switches sources, ignores interrupted requests, and retries real errors', async () => {
+  const modulePath = '../../web/src/components/Podcast';
+  const { createPodcastPlayback } = await import(modulePath);
+  const errors: string[] = [];
+  const pending: { resolve: () => void; reject: (error: Error) => void }[] = [];
+  const audio = {
+    src: '', error: null as { code: number } | null, playbackRate: 1, loads: 0,
+    pause() {},
+    load() { this.loads++; },
+    getAttribute(name: string) { return name === 'src' ? this.src || null : null; },
+    removeAttribute(name: string) { if (name === 'src') this.src = ''; },
+    play() { return new Promise<void>((resolve, reject) => pending.push({ resolve, reject })); },
+  };
+  const player = createPodcastPlayback(audio, (message: string) => errors.push(message));
+  player.play('/first', 1);
+  player.play('/second', 1.5);
+  assert.equal(audio.src, '/second');
+  assert.equal(audio.playbackRate, 1.5);
+  assert.equal(audio.loads, 2);
+  pending[0].reject(new Error('interrupted by new source'));
+  pending[1].resolve();
+  await Promise.resolve();
+  assert.deepEqual(errors, []);
+  player.play('/second', 1.5);
+  player.close();
+  audio.error = { code: 4 };
+  player.mediaError();
+  pending[2].reject(new Error('interrupted by close'));
+  await Promise.resolve();
+  assert.deepEqual(errors, []);
+  player.play('/second', 1);
+  audio.error = { code: 4 };
+  player.mediaError();
+  assert.deepEqual(errors, ['Podcast konnte nicht geladen werden.']);
+  player.play('/second', 1);
+  assert.equal(audio.loads, 5);
+  pending[3].reject(new Error('superseded failure'));
+  pending[4].reject(new Error('genuine failure'));
+  await Promise.resolve();
+  assert.deepEqual(errors, ['Podcast konnte nicht geladen werden.', 'Podcast konnte nicht abgespielt werden.']);
+});
+
 test('identical route requests share work while changed routes remain independent', async () => {
   const modulePath = '../../web/src/hooks';
   const { requestRoute, routeKey } = await import(modulePath);
