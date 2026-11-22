@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronUp, ExternalLink, Navigation, Plus, Tent, Trash } from 'lucide-react';
+import { ChevronDown, ChevronUp, ExternalLink, Navigation, Plus, Search, Tent, Trash, X } from 'lucide-react';
 import type { Day, RouteLeg, Stop } from '@neugier/shared';
 import {
   dayCamp,
@@ -31,6 +31,19 @@ const UPCOMING = '#2f7d4f';
 
 type Overnight = { day: Day; index: number; camp: Stop & { lat: number; lng: number } };
 
+export function searchOverview(days: Day[], stops: Stop[], query: string): { day: Day; label: string }[] {
+  const term = query.trim().toLocaleLowerCase();
+  if (!term) return [];
+  return days.flatMap((day) => {
+    const results: { day: Day; label: string }[] = [];
+    if ([day.title, day.date, fmtDate(day.date)].some((value) => value?.toLocaleLowerCase().includes(term))) results.push({ day, label: day.title || 'Ohne Titel' });
+    for (const stop of stops) {
+      if (stop.dayId === day.id && [stop.name, stop.address].some((value) => value?.toLocaleLowerCase().includes(term))) results.push({ day, label: stop.name });
+    }
+    return results;
+  }).slice(0, 50);
+}
+
 /**
  * Gesamtreise: ein Pin pro Tag am Übernachtungsziel (mit Ausstattungs-Icons), Fahrzeit zwischen den Zielen
  * aus Google Maps, Camper-Symbol an der aktuellen Position, zurückliegende Route blasser.
@@ -44,7 +57,10 @@ export function Overview() {
   const [active, setActive] = useState<string | null>(today?.id ?? null);
   const [currentTripDate, setCurrentTripDate] = useState(() => tripDate(state.trip));
   const [resolvedCamp, setResolvedCamp] = useState<{ key: string; lat: number; lng: number } | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
+  const searchResults = useMemo(() => searchOverview(days, state.stops, query), [days, state.stops, query]);
 
   useEffect(() => {
     const refresh = () => setCurrentTripDate(tripDate(state.trip));
@@ -183,7 +199,15 @@ export function Overview() {
           <span className="muted small">
             {days.length} Tage{totalSec > 0 && ` · ${fmtHours(totalSec)} Fahrt · ${fmtKm(totalM)}`}
           </span>
+          {canPlan && <button className="icon-btn" type="button" title={searchOpen ? 'Suche schließen' : 'Reise durchsuchen'} aria-label={searchOpen ? 'Suche schließen' : 'Reise durchsuchen'} aria-expanded={searchOpen} onClick={() => { setSearchOpen(!searchOpen); setQuery(''); }}>{searchOpen ? <X size={18} /> : <Search size={18} />}</button>}
         </div>
+        {canPlan && searchOpen && <div className="overview-search">
+          <input type="search" aria-label="Tage und Stopps suchen" placeholder="Tage und Stopps suchen" value={query} onChange={(event) => setQuery(event.target.value)} autoFocus />
+          {query.trim() && <div className="overview-search-results">
+            {searchResults.map((result, index) => <button key={`${result.day.id}-${index}`} type="button" onClick={() => navigate(`/tag/${result.day.id}`)}><span>{result.label}</span><span className="muted small">{fmtDate(result.day.date)} · {result.day.title}</span></button>)}
+            {searchResults.length === 0 && <p className="muted small">Keine Treffer</p>}
+          </div>}
+        </div>}
         {route?.stale && <p className="small muted" role="status">Fahrzeiten sind möglicherweise veraltet.</p>}
         <div className="day-list" ref={listRef}>
           {days.map((d, i) => (

@@ -66,3 +66,13 @@ test('expenses sort by latest edit or trip date without mutating the source', as
     { op: 'update', type: 'expense', id: 'shared', patch: { splitBetween: ['Alice', 'Bob'] } },
   ]);
 });
+
+test('overview search finds day titles and stops on their corresponding days', async () => {
+  const modulePath = '../../web/src/pages/Overview';
+  const { searchOverview } = await import(modulePath);
+  const days = [{ id: 'one', title: 'Auckland', date: '2026-01-01' }, { id: 'two', title: 'Rotorua', date: '2026-01-02' }];
+  const stops = [{ dayId: 'two', name: 'Hot Springs', address: 'Lake Road' }, { dayId: null, name: 'Hot Pool' }];
+  assert.deepEqual(searchOverview(days, stops, 'HOT').map((result: { day: { id: string } }) => result.day.id), ['two']);
+  assert.deepEqual(searchOverview(days, stops, 'auck').map((result: { day: { id: string } }) => result.day.id), ['one']);
+  assert.deepEqual(searchOverview(days, stops, '   '), []);
+});
