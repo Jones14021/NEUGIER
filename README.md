@@ -52,7 +52,7 @@ Admins können die vollständige SQLite-Datenbank auch unter **Admin → Datenba
 | `GOOGLE_MAPS_MAP_ID` | Optional eigene Map-ID (Advanced Markers) |
 | `LLM_PROVIDER` / `LLM_MODEL` / `LLM_API_KEY` | KI-Assistent: GitHub Copilot oder OpenAI-kompatible API; auch im Admin-Dashboard setzbar |
 | `LLM_BASE_URL` / `LLM_WEB_SEARCH` / `TAVILY_API_KEY` | Basis-URL und optionale Websuche; Details in der Entwickleranleitung |
-| `PODCAST_ENABLED` / `GOOGLE_CLOUD_PROJECT` / `GOOGLE_APPLICATION_CREDENTIALS` | Podcast-Worker und serverseitige Google-Cloud-Zugangsdaten; Aktivierung kann API-Kosten auslösen |
+| `PODCAST_ENABLED` / `GOOGLE_CLOUD_PROJECT` / `GOOGLE_TTS_CLIENT_EMAIL` / `GOOGLE_TTS_PRIVATE_KEY` / `GOOGLE_TTS_AGENT_LOCATION` | Podcast-Worker und serverseitige Google-Cloud-Zugangsdaten; Aktivierung kann API-Kosten auslösen |
 
 In der Google Cloud Console aktivieren: *Maps JavaScript API*, *Routes API*, *Places API (New)*.
 
