@@ -78,6 +78,17 @@ CREATE TABLE IF NOT EXISTS route_cache_meta (
   destination TEXT NOT NULL,
   updated_at INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS chat_conversations (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  trip_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  messages TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS chat_conversations_owner ON chat_conversations(user_id, trip_id, updated_at);
 `);
 
 export function getSetting(key: string): string | undefined {

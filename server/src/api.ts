@@ -8,6 +8,7 @@ import type { AnyEntity, ChatMessage, Op, Role, Trip, TripExport, TripState, Typ
 import { canSeePlanning, newId } from '@neugier/shared';
 import { attachUser, deleteUser, listUsers, loginDev, loginGoogle, logout, requireRole, setRole } from './auth';
 import { restoreDatabase, temporaryBackupPath } from './backup';
+import { createConversation, deleteConversation, getConversation, listConversations, saveConversation, validateImportedMessages } from './chat-history';
 import { config, uploadsDir } from './config';
 import { db, setSetting } from './db';
 import { toJson, toSplidCsv, toSplidText } from './exporters';
@@ -27,6 +28,7 @@ const photoUpload = multer({
   }),
   limits: { fileSize: 25 * 1024 * 1024 },
 });
+const pendingChats = new Set<string>();
 
 /** Async-Handler-Wrapper: Fehler als JSON zurückgeben. */
 const h =
@@ -367,6 +369,66 @@ export function api(): express.Router {
   });
 
   // --- KI-Assistent ---
+  r.get('/trips/:tripId/conversations', requireRole('editor'), h((req, res) => {
+    state(req);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(listConversations(req.user!.id, String(req.params.tripId)));
+  }));
+  r.post('/trips/:tripId/conversations', requireRole('editor'), h((req, res) => {
+    state(req);
+    const messages = req.body?.messages === undefined ? undefined : validateImportedMessages(req.body.messages);
+    const conversation = createConversation(req.user!.id, String(req.params.tripId));
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(201).json(messages ? saveConversation(req.user!.id, String(req.params.tripId), conversation.id, messages) : conversation);
+  }));
+  r.get('/trips/:tripId/conversations/:conversationId', requireRole('editor'), h((req, res) => {
+    state(req);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(getConversation(req.user!.id, String(req.params.tripId), String(req.params.conversationId)));
+  }));
+  r.delete('/trips/:tripId/conversations/:conversationId', requireRole('editor'), h((req, res) => {
+    state(req);
+    deleteConversation(req.user!.id, String(req.params.tripId), String(req.params.conversationId));
+    res.json({ ok: true });
+  }));
+  r.post('/trips/:tripId/conversations/:conversationId/messages', requireRole('editor'), h(async (req, res) => {
+    const trip = state(req);
+    const userId = req.user!.id;
+    const tripId = String(req.params.tripId);
+    const id = String(req.params.conversationId);
+    const text = typeof req.body?.content === 'string' ? req.body.content.trim() : '';
+    const retry = req.body?.retry === true;
+    if (!retry && (!text || text.length > 10_000)) return res.status(400).json({ error: 'Nachricht muss zwischen 1 und 10000 Zeichen enthalten' });
+    const conversation = getConversation(userId, tripId, id);
+    if (retry && conversation.messages.at(-1)?.role !== 'user') return res.status(400).json({ error: 'Keine unbeantwortete Nachricht vorhanden' });
+    if (!retry && conversation.messages.length >= 1000) return res.status(400).json({ error: 'Dieser Chat ist voll. Bitte einen neuen Chat beginnen.' });
+    if (pendingChats.has(id)) return res.status(409).json({ error: 'Dieser Chat wird bereits bearbeitet' });
+    pendingChats.add(id);
+    try {
+      const previousDay = conversation.messages.findLast((message) => message.role === 'user' && message.dayId)?.dayId;
+      const requestedDay = typeof req.body?.dayId === 'string' ? req.body.dayId : previousDay;
+      const dayId = trip.days.some((day) => day.id === requestedDay) ? requestedDay : undefined;
+      const messages: ChatMessage[] = retry ? conversation.messages : [...conversation.messages, { role: 'user', content: text, ...(dayId ? { dayId } : {}) }];
+      if (!retry) saveConversation(userId, tripId, id, messages);
+      const response = await chat(trip, messages, dayId);
+      res.setHeader('Cache-Control', 'no-store');
+      res.json(saveConversation(userId, tripId, id, [...messages, { role: 'assistant', ...response }]));
+    } finally { pendingChats.delete(id); }
+  }));
+  r.post('/trips/:tripId/conversations/:conversationId/messages/:index/applied', requireRole('editor'), h((req, res) => {
+    state(req);
+    const userId = req.user!.id;
+    const tripId = String(req.params.tripId);
+    const id = String(req.params.conversationId);
+    const index = Number(req.params.index);
+    if (pendingChats.has(id)) return res.status(409).json({ error: 'Dieser Chat wird bereits bearbeitet' });
+    const conversation = getConversation(userId, tripId, id);
+    const message = conversation.messages[index];
+    if (!Number.isInteger(index) || !message || message.role !== 'assistant' || !message.proposal?.length) return res.status(400).json({ error: 'Vorschlag nicht gefunden' });
+    message.proposal = [];
+    message.content += '\n\n✅ Übernommen';
+    res.json(saveConversation(userId, tripId, id, conversation.messages));
+  }));
   r.post(
     '/trips/:tripId/chat',
     requireRole('editor'),

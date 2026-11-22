@@ -209,7 +209,7 @@ sequenceDiagram
   participant S as Server
   participant L as LLM (GitHub Models)
   U->>W: Frage (optional mit Tag-Kontext)
-  W->>S: POST /trips/:id/chat
+  W->>S: POST /trips/:id/conversations/:conversationId/messages
   S->>L: System-Prompt + komplette Reise (Tage, Stopps mit IDs) + Verlauf
   L-->>S: Antwort + JSON-Block {changes:[add|update|move|remove]}
   S-->>W: Text + validierte Vorschläge
@@ -218,8 +218,7 @@ sequenceDiagram
   W->>S: Ops (source: ai) → Historie, rückgängig machbar
 ```
 
-OpenAI-kompatible Chat-Completions-API; Standard ist GitHub Models (`https://models.github.ai/inference`, Key = GitHub PAT mit `models:read`).
-Basis-URL, Modell und Key sind im Admin-Dashboard änderbar.
+Chats werden pro Nutzer und Reise in SQLite gespeichert und nicht im Service-Worker-Cache abgelegt. GitHub Copilot und OpenAI-kompatible Chat-Completions-Anbieter werden unterstützt; Anbieter, Modell, Zugangsdaten und die zusätzliche Assistentenvorgabe sind im Admin-Dashboard änderbar. Der Spielplatz nutzt weiterhin den zustandslosen Chat-Endpunkt für die Prüfung seines Entwurfs.
 
 ## Android
 

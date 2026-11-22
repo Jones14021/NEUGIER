@@ -246,8 +246,20 @@ export type ProposedChange =
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  dayId?: string;
   proposal?: ProposedChange[];
   sources?: { title: string; url: string }[];
+}
+
+export interface ChatConversationSummary {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChatConversation extends ChatConversationSummary {
+  messages: ChatMessage[];
 }
 
 export interface ChatResponse {

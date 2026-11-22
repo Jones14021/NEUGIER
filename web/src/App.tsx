@@ -65,7 +65,7 @@ export function App({ onLogout }: { onLogout: () => void }) {
                 <Route path="/tag/:dayId" element={<DayPage />} />
                 <Route path="/heute" element={today ? <Navigate to={`/tag/${today.id}`} replace /> : <Navigate to="/" />} />
                 <Route path="/ausgaben" element={<Expenses />} />
-                <Route path="/assistent" element={<Chat />} />
+                <Route path="/assistent" element={<Chat key={`${user.id}-${state.trip.id}`} />} />
                 <Route path="/spielplatz" element={<Playground />} />
                 <Route path="/todos" element={<Todos />} />
               </>

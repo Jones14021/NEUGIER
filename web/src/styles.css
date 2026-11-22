@@ -1419,6 +1419,9 @@ img.pickable:hover {
 .chat {
   padding-bottom: 0;
 }
+.chat-history { max-height: 240px; overflow-y: auto; border-block: 1px solid var(--line); }
+.chat-history-row { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); }
+.chat-history-open { display: flex; flex: 1; min-width: 0; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 0; border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; overflow-wrap: anywhere; cursor: pointer; }
 .messages {
   flex: 1;
   display: flex;

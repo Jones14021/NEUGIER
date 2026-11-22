@@ -31,6 +31,7 @@ export async function restoreDatabase(sourcePath: string, destinationPath: strin
     }
     await backup(source, destinationPath);
     current.exec('CREATE TABLE IF NOT EXISTS route_cache_meta (hash TEXT PRIMARY KEY, origin TEXT NOT NULL, destination TEXT NOT NULL, updated_at INTEGER NOT NULL)');
+    current.exec('CREATE TABLE IF NOT EXISTS chat_conversations (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, trip_id TEXT NOT NULL, title TEXT NOT NULL, messages TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL); CREATE INDEX IF NOT EXISTS chat_conversations_owner ON chat_conversations(user_id, trip_id, updated_at)');
   } finally {
     source?.close();
   }

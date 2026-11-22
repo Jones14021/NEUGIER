@@ -24,6 +24,7 @@ test('restores a complete backup into a live WAL database and rejects invalid fi
     await restoreDatabase(snapshot, live, db);
     assert.equal((db.prepare('SELECT value FROM settings').get() as { value: string }).value, 'original');
     assert.ok(db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'route_cache_meta'").get());
+    assert.ok(db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'chat_conversations'").get());
     db.exec("INSERT INTO settings VALUES ('after restore')");
     assert.equal((db.prepare('SELECT COUNT(*) AS count FROM settings').get() as { count: number }).count, 2);
   } finally {
