@@ -10,11 +10,23 @@ const BUILD_ASSETS = ["__BUILD_ASSETS__"];
 const MAX_MEDIA = 1500;
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(SHELL).then((c) => c.addAll(['/', '/manifest.webmanifest', '/icon.svg', ...BUILD_ASSETS])).then(() => self.skipWaiting()));
-});
-
-self.addEventListener('message', (e) => {
-  if (e.data?.type === 'SKIP_WAITING') e.waitUntil(self.skipWaiting());
+  e.waitUntil((async () => {
+    const cache = await caches.open(SHELL);
+    await cache.addAll(['/', '/manifest.webmanifest', '/icon.svg', ...BUILD_ASSETS]);
+    const html = await (await cache.match('/')).text();
+    const referenced = [...html.matchAll(/(?:src|href)=["'](\/assets\/[^"'?#]+)(?:[^"']*)["']/g)].map((match) => match[1]);
+    if (!referenced.some((asset) => asset.endsWith('.js')) || referenced.some((asset) => !BUILD_ASSETS.includes(asset))) {
+      throw new Error('App shell does not match the service worker');
+    }
+    for (const asset of BUILD_ASSETS) {
+      const response = await cache.match(asset);
+      const contentType = response?.headers.get('content-type') || '';
+      if (!response || !(asset.endsWith('.js') ? /javascript/i : /text\/css/i).test(contentType)) {
+        throw new Error('Invalid app asset: ' + asset);
+      }
+    }
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', (e) => {
@@ -81,19 +93,18 @@ self.addEventListener('fetch', (e) => {
     if (url.pathname.startsWith('/ws')) return;
     if (url.pathname.startsWith('/api/auth')) return;
     if (url.pathname.startsWith('/api/admin/backup')) return;
-    if (url.pathname === '/teilen' && req.mode === 'navigate') {
-      return e.respondWith(fetch(req).catch(() => caches.match('/')));
-    }
     if (url.pathname === '/manifest.webmanifest') return e.respondWith(networkFirst(req, SHELL));
     if (url.pathname.startsWith('/api/')) return e.respondWith(networkFirst(req, DATA));
     if (url.pathname.startsWith('/uploads/')) return e.respondWith(cacheFirst(req, MEDIA));
+    if (url.pathname.startsWith('/assets/')) return e.respondWith(cacheFirst(req, SHELL));
     // SPA-Navigation: immer die App-Shell
-    if (req.mode === 'navigate') return e.respondWith(networkFirst(req, SHELL).catch(() => caches.match('/')));
+    if (req.mode === 'navigate') return e.respondWith(caches.open(SHELL).then((c) => c.match('/')).then((hit) => hit || fetch(req)));
     return e.respondWith(staleWhileRevalidate(req, SHELL));
   }
 
-  // Google-Maps-Kacheln, Schriften und Skripte (bereits angesehene Gebiete bleiben offline sichtbar)
-  if (/(^|\.)(googleapis|gstatic|ggpht)\.com$/.test(url.hostname) && !url.pathname.includes('/maps/api/js/AuthenticationService')) {
+  if (url.hostname === 'maps.googleapis.com' && (url.pathname.startsWith('/maps/api/js') || url.pathname.startsWith('/maps-api-v3/'))) return;
+  // Google-Maps-Kacheln und Schriften (bereits angesehene Gebiete bleiben offline sichtbar)
+  if (/(^|\.)(googleapis|gstatic|ggpht)\.com$/.test(url.hostname)) {
     return e.respondWith(cacheFirst(req, MEDIA).catch(() => fetch(req)));
   }
 });

@@ -103,3 +103,5 @@ NEUGIER auf Android mit einem unterstützten Browser wie Chrome als App installi
 ## Updates installierter PWAs
 
 Ein Produktions-Build versieht den Service Worker und die App-Dateien mit einer neuen Version. Installierte PWAs prüfen beim Öffnen, bei erneutem Fokus und ungefähr stündlich auf Updates. Nach dem vollständigen Download wird die neue Version automatisch aktiviert und alle offenen App-Fenster werden ohne Nachfrage neu geladen. Nicht gespeicherte Eingaben können dabei verloren gehen; bereits lokal gespeicherte Offline-Änderungen sowie Daten- und Medien-Caches bleiben erhalten. Offline-Geräte erhalten das Update, sobald sie wieder verbunden sind und nach Updates suchen.
+
+Vor der Aktivierung prüft der Service Worker, ob HTML und JavaScript-/CSS-Dateien zum selben Build gehören. Ein unvollständiges Update wird verworfen; die bisherige Version bleibt aktiv und ein späterer Update-Check versucht es erneut. Google-Maps-JavaScript wird nicht offline gespeichert, sodass die App ohne Verbindung die Kartenvorschau statt der interaktiven Google-Karte verwendet.

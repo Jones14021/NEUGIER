@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useState } from 'react';
+import { Component, StrictMode, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import type { AppConfig, User } from '@neugier/shared';
@@ -8,6 +8,29 @@ import { Login } from './pages/Login';
 import { StoreProvider } from './store';
 import { registerServiceWorker } from './serviceWorker';
 import './styles.css';
+
+class AppErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() { return { failed: true }; }
+
+  componentDidCatch(error: Error, info: ErrorInfo) { console.error('NEUGIER konnte nicht angezeigt werden', error, info); }
+
+  render() {
+    if (this.state.failed) {
+      return (
+        <div className="center">
+          <div className="card narrow" role="alert">
+            <h2>NEUGIER konnte nicht angezeigt werden.</h2>
+            <p>Bitte versuche es erneut. Offline gespeicherte Änderungen bleiben erhalten.</p>
+            <button className="btn" onClick={() => location.reload()}>Erneut versuchen</button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function Root() {
   const [config, setConfig] = useState<AppConfig | null>(null);
@@ -57,8 +80,10 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
-      <Root />
-    </BrowserRouter>
+    <AppErrorBoundary>
+      <BrowserRouter>
+        <Root />
+      </BrowserRouter>
+    </AppErrorBoundary>
   </StrictMode>,
 );

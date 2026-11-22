@@ -9,7 +9,19 @@
     <title>NEUGIER</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div id="startup-status" class="center muted">NEUGIER wird geladen …</div></div>
+    <script>
+      setTimeout(() => {
+        const status = document.getElementById('startup-status');
+        if (!status) return;
+        status.setAttribute('role', 'alert');
+        status.textContent = 'NEUGIER konnte nicht gestartet werden. ';
+        const retry = document.createElement('button');
+        retry.textContent = 'Erneut versuchen';
+        retry.onclick = () => location.reload();
+        status.appendChild(retry);
+      }, 15000);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
