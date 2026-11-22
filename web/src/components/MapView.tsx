@@ -168,7 +168,7 @@ function MapMarkers({ markers, scaleMarkers, onMarkerClick, onMarkerDrag }: Pick
     return () => listener.remove();
   }, [map]);
   const scale = scaleMarkers ? mapMarkerScale(zoom) : 1;
-  return markers.map((marker) => <AdvancedMarker key={marker.id} position={marker} title={marker.title} draggable={marker.draggable}
+  return markers.map((marker) => <AdvancedMarker key={marker.id} position={marker} title={marker.title} draggable={!!marker.draggable && !!onMarkerDrag}
     zIndex={marker.active ? 1000 : marker.muted ? 1 : 10} onClick={() => onMarkerClick?.(marker.id)}
     onDragEnd={(event) => event.latLng && onMarkerDrag?.(marker.id, { lat: event.latLng.lat(), lng: event.latLng.lng() })}>
     <div style={{ transform: `scale(${scale})`, transformOrigin: 'bottom center' }}><Pin m={marker} /></div>
@@ -328,7 +328,7 @@ function NoKeyMap({ markers, paths, labels, camper, onMarkerClick, onMarkerDrag,
             title={m.title}
             onClick={() => onMarkerClick?.(m.id)}
             onPointerDown={(e) => {
-              if (!m.draggable) return;
+              if (!m.draggable || !onMarkerDrag) return;
               e.preventDefault();
               setDrag({ id: m.id, ...rel(e) });
             }}
