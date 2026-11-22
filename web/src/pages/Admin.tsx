@@ -18,7 +18,7 @@ interface Settings {
   podcastEnabled: boolean;
 }
 
-const podcastModels = ['gemini-3.1-flash-tts-preview', 'gemini-2.5-flash-tts', 'gemini-2.5-flash-lite-preview-tts', 'gemini-2.5-pro-tts'];
+const podcastModels = ['gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts', 'gemini-3.1-flash-tts-preview', 'gemini-2.5-flash-tts', 'gemini-2.5-flash-lite-preview-tts', 'gemini-2.5-pro-tts'];
 
 /** Admin: Rollen vergeben (Zuschauer/Mitarbeiter/Admin) und KI-Einstellungen. */
 export function Admin() {
@@ -201,6 +201,8 @@ export function Admin() {
           <label>
             Podcast-Sprachmodell
             <select value={podcastModels.includes(settings.podcastModel) ? settings.podcastModel : '__custom__'} onChange={(event) => setSettings({ ...settings, podcastModel: event.target.value === '__custom__' ? '' : event.target.value })}>
+              <option value="gemini-3.8-flash-tts">Gemini 3.8 Flash TTS</option>
+              <option value="gemini-3.8-flash-lite-tts">Gemini 3.8 Flash Lite TTS</option>
               <option value="gemini-3.1-flash-tts-preview">Gemini 3.1 Flash TTS (Preview)</option>
               <option value="gemini-2.5-flash-tts">Gemini 2.5 Flash TTS</option>
               <option value="gemini-2.5-flash-lite-preview-tts">Gemini 2.5 Flash Lite TTS (Preview)</option>

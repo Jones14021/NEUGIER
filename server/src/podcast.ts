@@ -1,18 +1,12 @@
 import crypto from 'node:crypto';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { spawn } from 'node:child_process';
-import { GoogleAuth } from 'google-auth-library';
 import { dayStops, type TripState } from '@neugier/shared';
 import { db, getSetting, setSetting } from './db';
 import { DEFAULT_PODCAST_PROMPT, llmSettings, podcastScript } from './llm';
+import { synthesizePodcast } from './podcast-tts';
 import { events, getState, listTrips } from './store';
 
-export const DEFAULT_PODCAST_MODEL = 'gemini-3.1-flash-tts-preview';
-const STYLE = 'Zwei Hosts sprechen auf Deutsch natürlich, neugierig und lebendig miteinander. Sam klingt begeistert, Alex ruhig und kenntnisreich. Variiere Tempo und Betonung passend zum Inhalt, sprich Ortsnamen sorgfältig und nutze Lachen und Pausen sparsam.';
+export const DEFAULT_PODCAST_MODEL = 'gemini-3.8-flash-tts';
 const enabled = process.env.PODCAST_ENABLED === 'true';
-const auth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
 let running = false;
 let started = false;
 let databaseVersion = 0;
@@ -49,6 +43,10 @@ export function ensurePodcastSchema(): void {
   if (getSetting('podcast.prompt.version') !== '2') {
     setSetting('podcast.prompt', DEFAULT_PODCAST_PROMPT);
     setSetting('podcast.prompt.version', '2');
+  }
+  if (getSetting('podcast.model.version') !== '3.8') {
+    setSetting('podcast.model', DEFAULT_PODCAST_MODEL);
+    setSetting('podcast.model.version', '3.8');
   }
 }
 
@@ -167,64 +165,6 @@ async function work(): Promise<void> {
         .run(attempts < 3 ? 'queued' : 'failed', attempts, nextAttempt, String((error as Error).message).slice(0, 500), new Date().toISOString(), row.trip_id, row.day_id, row.revision);
     }
   }
-}
-
-export function splitDialogue(dialogue: string, singleSpeaker: boolean): { text: string; speaker?: 'Sam' | 'Alex' }[] {
-  const chunks: { text: string; speaker?: 'Sam' | 'Alex' }[] = [];
-  for (const line of dialogue.split('\n')) {
-    const match = /^(Sam|Alex):\s*(.+)$/.exec(line);
-    if (!match) throw new Error('Ungültiger Sprecher im Podcast-Skript.');
-    const speaker = match[1] as 'Sam' | 'Alex';
-    const sentences = match[2].split(/(?<=[.!?])\s+/u);
-    for (const sentence of sentences) {
-      const content = sentence.trim();
-      if (!content) continue;
-      const text = singleSpeaker ? content : `${speaker}: ${content}`;
-      if (Buffer.byteLength(text, 'utf8') > 3800) throw new Error('Ein Satz im Podcast-Skript ist zu lang.');
-      const previous = chunks.at(-1);
-      if (previous && (!singleSpeaker || previous.speaker === speaker) && Buffer.byteLength(`${previous.text}\n${text}`, 'utf8') <= 3800) previous.text += `\n${text}`;
-      else chunks.push({ text, ...(singleSpeaker ? { speaker } : {}) });
-    }
-  }
-  if (!chunks.length) throw new Error('Das Podcast-Skript ist leer.');
-  return chunks;
-}
-
-export async function synthesizePodcast(dialogue: string, model: string, credentials?: { project: string; token: string }): Promise<Buffer> {
-  const singleSpeaker = model === 'gemini-2.5-flash-lite-preview-tts';
-  const chunks = splitDialogue(dialogue, singleSpeaker);
-  const project = credentials?.project || process.env.GOOGLE_CLOUD_PROJECT || await auth.getProjectId();
-  const token = credentials?.token || await auth.getAccessToken();
-  if (!token || !project) throw new Error('Google Cloud ADC oder Projekt-ID für TTS fehlt.');
-  const audio: Buffer[] = [];
-  for (const chunk of chunks) {
-    const voice = singleSpeaker
-      ? { languageCode: 'de-DE', modelName: model, name: chunk.speaker === 'Sam' ? 'Kore' : 'Charon' }
-      : { languageCode: 'de-DE', modelName: model, multiSpeakerVoiceConfig: { speakerVoiceConfigs: [{ speakerAlias: 'Sam', speakerId: 'Kore' }, { speakerAlias: 'Alex', speakerId: 'Charon' }] } };
-    const response = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize', {
-      method: 'POST', headers: { Authorization: `Bearer ${token}`, 'x-goog-user-project': project, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ input: { prompt: STYLE, text: chunk.text }, voice, audioConfig: { audioEncoding: 'MP3' } }),
-      signal: AbortSignal.timeout(180_000),
-    });
-    if (!response.ok) throw new Error(`Google TTS (${response.status}): ${(await response.text()).slice(0, 300)}`);
-    const result = await response.json() as { audioContent?: string };
-    if (!result.audioContent) throw new Error('Google TTS hat kein Audio zurückgegeben.');
-    audio.push(Buffer.from(result.audioContent, 'base64'));
-  }
-  if (audio.length === 1) return audio[0];
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'neugier-podcast-'));
-  try {
-    audio.forEach((part, index) => fs.writeFileSync(path.join(directory, `${index}.mp3`), part, { mode: 0o600 }));
-    fs.writeFileSync(path.join(directory, 'files.txt'), audio.map((_part, index) => `file '${index}.mp3'`).join('\n'), { mode: 0o600 });
-    await new Promise<void>((resolve, reject) => {
-      const process = spawn('ffmpeg', ['-nostdin', '-v', 'error', '-f', 'concat', '-safe', '1', '-i', path.join(directory, 'files.txt'), '-c', 'copy', path.join(directory, 'result.mp3')]);
-      let stderr = '';
-      process.stderr.on('data', (data: Buffer) => { stderr += data.toString(); });
-      process.on('error', reject);
-      process.on('close', (code) => code === 0 ? resolve() : reject(new Error(`Audio-Zusammenführung fehlgeschlagen: ${stderr.slice(0, 300)}`)));
-    });
-    return fs.readFileSync(path.join(directory, 'result.mp3'));
-  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 }
 
 let synthesizer = synthesizePodcast;

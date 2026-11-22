@@ -5,3 +5,4 @@ tailscale-state/
 .env
 *.log
 .npm/
+podcast-beispiel-*.mp3
