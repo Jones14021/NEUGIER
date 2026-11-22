@@ -43,10 +43,16 @@ test('conversation history is private, persistent and continues with prior messa
     });
     await request(`/admin/users/${editor.user.id}`, 'PUT', admin.cookie, { role: 'editor' });
     await request(`/admin/users/${viewer.user.id}`, 'PUT', admin.cookie, { role: 'viewer' });
+    const defaults = await (await request('/admin/settings', 'GET', admin.cookie)).json() as { podcastPrompt: string };
+    assert.match(defaults.podcastPrompt, /Sam:.*Alex:/);
+    assert.match(defaults.podcastPrompt, /\[laughing\].*\[sigh\]/);
     assert.equal((await request('/admin/settings', 'PUT', admin.cookie, { assistantPrompt: 'Antworte wie ein sachlicher Reiseführer.', podcastPrompt: 'Podcast über Kultur und Geschichte.' })).status, 200);
     const settings = await (await request('/admin/settings', 'GET', admin.cookie)).json() as { assistantPrompt: string; podcastPrompt: string };
     assert.equal(settings.assistantPrompt, 'Antworte wie ein sachlicher Reiseführer.');
     assert.equal(settings.podcastPrompt, 'Podcast über Kultur und Geschichte.');
+    assert.equal((await request('/admin/settings', 'PUT', admin.cookie, { podcastPrompt: '' })).status, 200);
+    const reset = await (await request('/admin/settings', 'GET', admin.cookie)).json() as { podcastPrompt: string };
+    assert.equal(reset.podcastPrompt, defaults.podcastPrompt);
     assert.equal((await request('/admin/settings', 'GET', editor.cookie)).status, 403);
     const trip = await (await request('/trips', 'POST', admin.cookie, { name: 'Test' })).json() as { id: string };
     const day = { id: 'day-one', date: '2026-01-01', title: 'Erster Tag', times: '', notes: '', shower: { status: 'unklar', note: '' } };

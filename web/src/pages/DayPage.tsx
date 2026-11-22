@@ -11,6 +11,7 @@ import { EditableText } from '../components/EditableText';
 import { FacilityToggles } from '../components/Facilities';
 import { HistoryPanel } from '../components/HistoryPanel';
 import { MapView } from '../components/MapView';
+import { PodcastButton } from '../components/Podcast';
 import { EditableRichText } from '../components/RichText';
 import { StopEditor } from '../components/StopEditor';
 import { StopList } from '../components/StopList';
@@ -136,6 +137,7 @@ export function DayPage() {
 
         <div className="panel-scroll">
           <CoverImage day={day} />
+          <PodcastButton dayId={day.id} title={day.title || fmtDate(day.date)} />
 
           {(day.times || canEdit) && (
             <EditableText value={day.times} placeholder="Feste Termine (z. B. Fähre 08:45)" className="times accent small" disabled={!canEdit} onSave={(times) => updateDay({ times })} />

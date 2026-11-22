@@ -102,7 +102,7 @@ test('service worker never caches private conversation history', () => {
     URL,
   };
   vm.runInNewContext(source, context);
-  for (const url of ['https://example.test/api/trips/trip/conversations', 'https://example.test/api/trips/trip/conversations/chat', 'https://example.test/api/admin/settings']) {
+  for (const url of ['https://example.test/api/trips/trip/conversations', 'https://example.test/api/trips/trip/conversations/chat', 'https://example.test/api/admin/settings', 'https://example.test/api/trips/trip/podcasts', 'https://example.test/api/trips/trip/podcasts/day/audio']) {
     let intercepted = false;
     handlers.fetch({ request: { method: 'GET', url }, respondWith: () => { intercepted = true; } });
     assert.equal(intercepted, false);

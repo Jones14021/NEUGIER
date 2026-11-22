@@ -23,6 +23,7 @@ import {
 import { facilityBadges, FacilityIcons } from '../components/Facilities';
 import { api } from '../api';
 import { MapView, midpoint, type MapLabel, type MapMarker, type MapPath } from '../components/MapView';
+import { PodcastButton } from '../components/Podcast';
 import { findToday, legsByDest, useRoute } from '../hooks';
 import { useTrip } from '../store';
 
@@ -284,6 +285,7 @@ function DayCard(p: {
         )}
       </div>
       <h3>{day.title || 'Ohne Titel'}</h3>
+      <PodcastButton dayId={day.id} title={day.title || fmtDate(day.date)} />
       {day.times && <p className="small accent">{day.times}</p>}
       <div className="day-card-meta">
         <span className={`meta${camp ? '' : ' muted'}`}>

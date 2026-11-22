@@ -14,7 +14,11 @@ interface Settings {
   searchApiKeySet: boolean;
   assistantPrompt: string;
   podcastPrompt: string;
+  podcastModel: string;
+  podcastEnabled: boolean;
 }
+
+const podcastModels = ['gemini-3.1-flash-tts-preview', 'gemini-2.5-flash-tts', 'gemini-2.5-flash-lite-preview-tts', 'gemini-2.5-pro-tts'];
 
 /** Admin: Rollen vergeben (Zuschauer/Mitarbeiter/Admin) und KI-Einstellungen. */
 export function Admin() {
@@ -24,10 +28,13 @@ export function Admin() {
   const [apiKey, setApiKey] = useState('');
   const [searchKey, setSearchKey] = useState('');
   const [backupBusy, setBackupBusy] = useState(false);
+  const [savedPodcastModel, setSavedPodcastModel] = useState('');
+  const [modelDialog, setModelDialog] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const load = () => {
     api<User[]>('/admin/users').then(setUsers);
-    api<Settings>('/admin/settings').then(setSettings);
+    api<Settings>('/admin/settings').then((value) => { setSettings(value); setSavedPodcastModel(value.podcastModel); });
   };
   useEffect(load, []);
 
@@ -43,7 +50,10 @@ export function Admin() {
     load();
   };
 
-  const saveSettings = async () => {
+  const saveSettings = async (regeneratePodcasts = false) => {
+    if (!settings || saving) return;
+    setSaving(true);
+    try {
     await api('/admin/settings', {
       method: 'PUT',
       body: {
@@ -55,13 +65,18 @@ export function Admin() {
         searchApiKey: searchKey || undefined,
         assistantPrompt: settings!.assistantPrompt,
         podcastPrompt: settings!.podcastPrompt,
+        podcastModel: settings!.podcastModel.trim(),
+        regeneratePodcasts,
       },
     });
     setApiKey('');
     setSearchKey('');
     toast('Gespeichert');
+    setModelDialog(false);
     load();
-    reload();
+    void reload();
+    } catch (error) { toast((error as Error).message); }
+    finally { setSaving(false); }
   };
 
   const pending = users.filter((u) => u.role === 'pending');
@@ -184,6 +199,18 @@ export function Admin() {
             <textarea rows={4} maxLength={20000} value={settings.podcastPrompt} onChange={(e) => setSettings({ ...settings, podcastPrompt: e.target.value })} />
           </label>
           <label>
+            Podcast-Sprachmodell
+            <select value={podcastModels.includes(settings.podcastModel) ? settings.podcastModel : '__custom__'} onChange={(event) => setSettings({ ...settings, podcastModel: event.target.value === '__custom__' ? '' : event.target.value })}>
+              <option value="gemini-3.1-flash-tts-preview">Gemini 3.1 Flash TTS (Preview)</option>
+              <option value="gemini-2.5-flash-tts">Gemini 2.5 Flash TTS</option>
+              <option value="gemini-2.5-flash-lite-preview-tts">Gemini 2.5 Flash Lite TTS (Preview)</option>
+              <option value="gemini-2.5-pro-tts">Gemini 2.5 Pro TTS</option>
+              <option value="__custom__">Modellname manuell eingeben</option>
+            </select>
+          </label>
+          {!podcastModels.includes(settings.podcastModel) && <label>Modellname<input value={settings.podcastModel} maxLength={200} onChange={(event) => setSettings({ ...settings, podcastModel: event.target.value })} placeholder="gemini-…" /></label>}
+          {!settings.podcastEnabled && <p className="small muted">Podcast-Erzeugung ist auf dem Server nicht aktiviert.</p>}
+          <label>
             {settings.llmProvider === 'copilot' ? 'GitHub-Token' : 'API-Key'} {settings.llmApiKeySet && <span className="badge green">hinterlegt</span>}
             <input
               type="password"
@@ -218,11 +245,20 @@ export function Admin() {
             </label>
           )}
           <p className="small muted">Anleitung: docs/ENTWICKLER.md → „KI-Assistent mit Websuche“.</p>
-          <button className="btn primary" onClick={saveSettings}>
+          <button className="btn primary" disabled={saving || !settings.podcastModel.trim()} onClick={() => settings.podcastModel.trim() !== savedPodcastModel ? setModelDialog(true) : void saveSettings()}>
             Speichern
           </button>
         </div>
       )}
+      {modelDialog && <div className="modal-bg"><div className="modal" role="dialog" aria-modal="true" aria-labelledby="podcast-model-title">
+        <div className="modal-head"><h3 id="podcast-model-title">Podcast-Modell ändern</h3></div>
+        <p>Sollen bestehende Podcasts mit dem neuen Modell neu erzeugt werden? Dabei können Kosten entstehen.</p>
+        <div className="modal-foot wrap">
+          <button className="btn" disabled={saving} onClick={() => setModelDialog(false)}>Abbrechen</button>
+          <button className="btn" disabled={saving} onClick={() => void saveSettings(false)}>Aufnahmen behalten</button>
+          <button className="btn primary" disabled={saving} onClick={() => void saveSettings(true)}>Neu erzeugen</button>
+        </div>
+      </div></div>}
     </div>
   );
 }

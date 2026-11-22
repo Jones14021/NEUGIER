@@ -7,7 +7,10 @@ import { getSetting } from './db';
 export type LlmProvider = 'copilot' | 'openai';
 
 export const DEFAULT_ASSISTANT_PROMPT = 'Du bist ein hilfsbereiter Reiseplanungs-Assistent für einen Camper-Roadtrip. Antworte auf Deutsch, knapp und konkret.';
-export const DEFAULT_PODCAST_PROMPT = 'Erstelle einen unterhaltsamen, informativen deutschsprachigen Reisepodcast über die Stopps des Tages, die Region, ihre Geschichte und Kultur. Kennzeichne unsichere Informationen und erfinde keine Fakten.';
+export const DEFAULT_PODCAST_PROMPT = `Erstelle ein unterhaltsames, informatives deutschsprachiges Reisepodcast-Skript über die Stopps des Tages, die Region, ihre Geschichte und Kultur.
+Zwei Hosts, Sam und Alex, führen ein lebendiges, natürliches Gespräch: Sie stellen Fragen, reagieren aufeinander und wechseln zwischen anschaulichen Erzählungen und kurzen Wortwechseln. Sam ist neugierig und begeistert, Alex erzählt ruhig und kenntnisreich. Variiere Sprechtempo und Betonung passend zum Inhalt, ohne künstliche Akzente oder übertriebene Effekte. Schreibe gut verständliche, sprechbare Sätze und achte besonders bei Ortsnamen und Māori-Begriffen auf die Aussprache; erfinde keine Aussprachehilfen.
+Kennzeichne jeden Sprecherbeitrag zu Beginn einer neuen Zeile mit genau "Sam:" oder "Alex:". Setze gelegentlich und passend die Gemini-TTS-Tags [laughing], [sigh], [uhm], [short pause] oder [whispering] in den gesprochenen Text ein. Setze sie sparsam ein und erzwinge kein Lachen bei ernsten Themen. Keine weiteren Regieanweisungen im Dialog.
+Kennzeichne unsichere Informationen und erfinde keine Fakten oder Quellen. Gib Quellen getrennt vom gesprochenen Dialog an.`;
 
 export function llmSettings() {
   const provider = (getSetting('llm.provider') || config.llm.provider) as LlmProvider;
@@ -119,6 +122,47 @@ async function complete(s: ReturnType<typeof llmSettings>, body: Record<string, 
   return (await r.json()) as {
     choices: { message: { content: string | null; tool_calls?: ToolCall[]; annotations?: { type: string; url_citation?: Source }[] } }[];
   };
+}
+
+export async function podcastScript(context: string): Promise<{ dialogue: string; sources: Source[] }> {
+  const settings = llmSettings();
+  if (!settings.apiKey) throw new Error('Kein API-Key für die Skripterzeugung hinterlegt (Admin → Einstellungen).');
+  const system = `${settings.podcastPrompt}\n\nGib ausschließlich ein JSON-Objekt zurück: {"dialogue":"Sam: ...\\nAlex: ...","sources":[{"title":"...","url":"https://..."}]}. Jeder Beitrag steht in einer eigenen Zeile und beginnt mit Sam: oder Alex:. Keine Markdown-Codeblöcke. Führe Quellen nur auf, wenn sie tatsächlich bekannt sind.`;
+  let content: string;
+  let citations: Source[] = [];
+  if (settings.provider === 'copilot') {
+    const result = await askCopilot({ token: settings.apiKey, model: settings.model, system, prompt: context, webSearch: settings.webSearchMode !== 'off' });
+    content = result.content;
+    citations = result.sources;
+  } else {
+    const useTavily = settings.webSearchMode === 'tavily' && !!settings.searchApiKey;
+    const useNative = settings.webSearchMode === 'native';
+    const messages: Msg[] = [{ role: 'system', content: system }, { role: 'user', content: context }];
+    content = '';
+    for (let round = 0; round < 4; round++) {
+      const result = await complete(settings, { messages, ...(useNative ? { web_search_options: {} } : { temperature: 0.4 }), ...(useTavily ? { tools: [SEARCH_TOOL] } : {}) });
+      const message = result.choices?.[0]?.message;
+      citations.push(...(message?.annotations ?? []).flatMap((item) => item.url_citation ? [item.url_citation] : []));
+      if (!message?.tool_calls?.length) { content = message?.content ?? ''; break; }
+      messages.push({ role: 'assistant', content: message.content, tool_calls: message.tool_calls });
+      for (const call of message.tool_calls) {
+        let query = '';
+        try { query = (JSON.parse(call.function.arguments) as { query: string }).query; } catch {}
+        const found = useTavily && query ? await tavily(query, settings.searchApiKey) : { text: 'Keine Suche verfügbar', sources: [] };
+        citations.push(...found.sources);
+        messages.push({ role: 'tool', tool_call_id: call.id, content: found.text });
+      }
+    }
+  }
+  const raw = content.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  let parsed: { dialogue?: unknown; sources?: unknown };
+  try { parsed = JSON.parse(raw); } catch { throw new Error('Das KI-Modell hat kein gültiges Podcast-Skript geliefert.'); }
+  if (typeof parsed.dialogue !== 'string') throw new Error('Das Podcast-Skript enthält keinen Dialog.');
+  const lines = parsed.dialogue.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (!lines.length || lines.some((line) => !/^(Sam|Alex):\s*\S/.test(line)) || !lines.some((line) => line.startsWith('Sam:')) || !lines.some((line) => line.startsWith('Alex:'))) {
+    throw new Error('Das Podcast-Skript benötigt Beiträge von Sam und Alex.');
+  }
+  return { dialogue: lines.join('\n'), sources: dedupe(citations.filter((source) => /^https?:\/\//i.test(source.url))) };
 }
 
 /**

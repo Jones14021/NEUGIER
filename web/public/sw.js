@@ -95,6 +95,7 @@ self.addEventListener('fetch', (e) => {
     if (url.pathname.startsWith('/api/admin/backup')) return;
     if (url.pathname === '/api/admin/settings') return;
     if (/^\/api\/trips\/[^/]+\/conversations(?:\/|$)/.test(url.pathname)) return;
+    if (/^\/api\/trips\/[^/]+\/podcasts(?:\/|$)/.test(url.pathname)) return;
     if (url.pathname === '/manifest.webmanifest') return e.respondWith(networkFirst(req, SHELL));
     if (url.pathname.startsWith('/api/')) return e.respondWith(networkFirst(req, DATA));
     if (url.pathname.startsWith('/uploads/')) return e.respondWith(cacheFirst(req, MEDIA));

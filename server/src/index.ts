@@ -5,6 +5,7 @@ import express from 'express';
 import { api } from './api';
 import { config, uploadsDir } from './config';
 import { geocodeMissing, refreshRouteCache } from './maps';
+import { startPodcastWorker } from './podcast';
 import { attachRealtime } from './realtime';
 import { seedIfEmpty } from './seed';
 import { listTrips } from './store';
@@ -30,6 +31,7 @@ attachRealtime(server);
 server.listen(config.port, () => {
   console.log(`NEUGIER läuft auf http://localhost:${config.port}`);
   if (config.devLogin) console.log('Dev-Login aktiv (kein GOOGLE_CLIENT_ID gesetzt oder DEV_LOGIN=true)');
+  startPodcastWorker();
   for (const trip of listTrips()) void geocodeMissing(trip.id).catch((error) => console.error('Geokodierung:', error));
   const refreshRoutes = () => void refreshRouteCache().catch((error) => console.error('Routen aktualisieren:', error));
   refreshRoutes();

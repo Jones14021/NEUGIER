@@ -6,6 +6,7 @@ Tagesansicht mit allen Stopps und Navigation per Google Maps, Live-Zusammenarbei
 Routen-Diff, Ausgaben (Splid-Export), Erinnerungen und Excel-Import mit Merge.
 
 Architektur: [docs/ARCHITEKTUR.md](docs/ARCHITEKTUR.md) · Einrichtung und API-Keys: [docs/ENTWICKLER.md](docs/ENTWICKLER.md)
+Tagespodcasts und Google TTS: [docs/PODCAST.md](docs/PODCAST.md)
 
 ## Schnellstart (lokal, Docker)
 
@@ -51,6 +52,7 @@ Admins können die vollständige SQLite-Datenbank auch unter **Admin → Datenba
 | `GOOGLE_MAPS_MAP_ID` | Optional eigene Map-ID (Advanced Markers) |
 | `LLM_PROVIDER` / `LLM_MODEL` / `LLM_API_KEY` | KI-Assistent: GitHub Copilot oder OpenAI-kompatible API; auch im Admin-Dashboard setzbar |
 | `LLM_BASE_URL` / `LLM_WEB_SEARCH` / `TAVILY_API_KEY` | Basis-URL und optionale Websuche; Details in der Entwickleranleitung |
+| `PODCAST_ENABLED` / `GOOGLE_CLOUD_PROJECT` / `GOOGLE_APPLICATION_CREDENTIALS` | Podcast-Worker und serverseitige Google-Cloud-Zugangsdaten; Aktivierung kann API-Kosten auslösen |
 
 In der Google Cloud Console aktivieren: *Maps JavaScript API*, *Routes API*, *Places API (New)*.
 
@@ -68,6 +70,7 @@ In der Google Cloud Console aktivieren: *Maps JavaScript API*, *Routes API*, *Pl
 * **Ausgaben**: wer hat gezahlt + Preis, Aufteilung, Export für Splid
 * **Erinnerungen**: Text + Fotos, getrennt von der Planung
 * **KI-Assistent** mit kompletter Reise als Kontext, privatem Chatverlauf pro Nutzer und Reise und konfigurierbarer Vorgabe; Vorschläge als Diff (Liste + Karte) zum Annehmen/Ablehnen/Ändern
+* **Tagespodcasts** mit serverseitiger Google-TTS-Erzeugung und einem beim Navigieren aktiven Player
 * **Import** Excel/JSON inkl. Re-Import mit 3-Wege-Merge und Konflikt-UI; **Export** JSON
 * **Android-Teilen**: Google-Maps-Links in der installierten PWA als Idee oder Tagesstopp übernehmen
 * **PWA-Updates**: Neue Versionen werden nach dem Download automatisch aktiviert; lokal gespeicherte Offline-Änderungen bleiben erhalten

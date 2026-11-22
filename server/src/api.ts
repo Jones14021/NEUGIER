@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { backup } from 'node:sqlite';
 import compression from 'compression';
@@ -13,14 +14,17 @@ import { config, uploadsDir } from './config';
 import { db, setSetting } from './db';
 import { toJson, toSplidCsv, toSplidText } from './exporters';
 import { parseExcel } from './importers/excel';
-import { chat, llmSettings } from './llm';
+import { chat, DEFAULT_PODCAST_PROMPT, llmSettings } from './llm';
 import { computeRoute, geocodeMissing, searchPlaces } from './maps';
 import { resolveMapShare } from './maps-share';
 import { buildMergeOps, fromExport, planMerge, type Resolution } from './merge';
+import { podcastAudio, podcastEnabled, podcastInfo, podcastModel, queuePodcast, refreshExistingPodcasts, scanPodcasts } from './podcast';
 import { applyOps, events, getState, listChanges, listTrips, restoreVersion, rollbackBatch, updateLiveLocation } from './store';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 30 * 1024 * 1024 } });
-const backupUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
+const backupUploadsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'neugier-restore-'));
+process.on('exit', () => fs.rmSync(backupUploadsDir, { recursive: true, force: true }));
+const backupUpload = multer({ storage: multer.diskStorage({ destination: backupUploadsDir, filename: (_req, _file, cb) => cb(null, `${newId()}.db`) }), limits: { fileSize: 1024 * 1024 * 1024 } });
 const photoUpload = multer({
   storage: multer.diskStorage({
     destination: uploadsDir,
@@ -118,17 +122,18 @@ export function api(): express.Router {
   }));
   r.post('/admin/backup/restore', requireRole('admin'), backupUpload.single('file'), h(async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'Keine Sicherungsdatei' });
-    if (restoringBackup) return res.status(409).json({ error: 'Wiederherstellung läuft bereits' });
-    const temp = temporaryBackupPath();
+    if (restoringBackup) {
+      fs.rmSync(req.file.path, { force: true });
+      return res.status(409).json({ error: 'Wiederherstellung läuft bereits' });
+    }
     restoringBackup = true;
     try {
-      fs.writeFileSync(temp.file, req.file.buffer, { mode: 0o600 });
-      await restoreDatabase(temp.file, path.join(config.dataDir, 'neugier.db'), db);
+      await restoreDatabase(req.file.path, path.join(config.dataDir, 'neugier.db'), db);
       pendingImports.clear();
       events.emit('database-restored');
       res.json({ ok: true });
     } finally {
-      fs.rmSync(temp.directory, { recursive: true, force: true });
+      fs.rmSync(req.file.path, { force: true });
       restoringBackup = false;
     }
   }));
@@ -156,11 +161,17 @@ export function api(): express.Router {
       searchApiKeySet: !!s.searchApiKey,
       assistantPrompt: s.assistantPrompt,
       podcastPrompt: s.podcastPrompt,
+      podcastModel: podcastModel(),
+      podcastEnabled: podcastEnabled(),
     });
   });
   r.put('/admin/settings', requireRole('admin'), (req, res) => {
-    const { llmProvider, llmBaseUrl, llmModel, llmApiKey, webSearch, searchApiKey, assistantPrompt, podcastPrompt } = req.body as Record<string, string | boolean | undefined>;
+    const { llmProvider, llmBaseUrl, llmModel, llmApiKey, webSearch, searchApiKey, assistantPrompt, podcastPrompt, podcastModel: nextPodcastModel, regeneratePodcasts } = req.body as Record<string, string | boolean | undefined>;
     if ([assistantPrompt, podcastPrompt].some((prompt) => prompt !== undefined && (typeof prompt !== 'string' || prompt.length > 20_000))) return res.status(400).json({ error: 'Prompt darf höchstens 20000 Zeichen enthalten' });
+    if (nextPodcastModel !== undefined && (typeof nextPodcastModel !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,199}$/.test(nextPodcastModel))) return res.status(400).json({ error: 'Ungültiger Podcast-Modellname' });
+    const modelChanged = typeof nextPodcastModel === 'string' && nextPodcastModel !== podcastModel();
+    if (modelChanged && typeof regeneratePodcasts !== 'boolean') return res.status(400).json({ error: 'Bitte entscheiden, ob bestehende Podcasts neu erzeugt werden sollen.' });
+    const promptChanged = typeof podcastPrompt === 'string' && (podcastPrompt.trim() || DEFAULT_PODCAST_PROMPT) !== llmSettings().podcastPrompt;
     if (llmProvider === 'copilot' || llmProvider === 'openai') setSetting('llm.provider', llmProvider);
     if (typeof llmBaseUrl === 'string') setSetting('llm.baseUrl', llmBaseUrl);
     if (typeof llmModel === 'string') setSetting('llm.model', llmModel);
@@ -169,6 +180,9 @@ export function api(): express.Router {
     if (typeof searchApiKey === 'string' && searchApiKey) setSetting('search.apiKey', searchApiKey);
     if (typeof assistantPrompt === 'string') setSetting('llm.systemPrompt', assistantPrompt.trim());
     if (typeof podcastPrompt === 'string') setSetting('podcast.prompt', podcastPrompt.trim());
+    if (typeof nextPodcastModel === 'string') setSetting('podcast.model', nextPodcastModel);
+    if (modelChanged && regeneratePodcasts) refreshExistingPodcasts();
+    if (promptChanged) scanPodcasts();
     res.json({ ok: true });
   });
 
@@ -197,6 +211,52 @@ export function api(): express.Router {
     }),
   );
   r.get('/trips/:tripId', requireRole('viewer'), h((req, res) => res.json(stateFor(req))));
+
+  r.get('/trips/:tripId/podcasts', requireRole('viewer'), h((req, res) => {
+    const trip = state(req);
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json(Object.fromEntries(trip.days.map((day) => {
+      const info = podcastInfo(trip.trip.id, day.id);
+      return [day.id, req.user!.role === 'admin' ? info : { ...info, error: info.error ? 'Podcast-Erzeugung fehlgeschlagen' : '' }];
+    })));
+  }));
+  r.get('/trips/:tripId/podcasts/:dayId', requireRole('viewer'), h((req, res) => {
+    const trip = state(req);
+    const dayId = String(req.params.dayId);
+    if (!trip.days.some((day) => day.id === dayId)) return res.status(404).json({ error: 'Tag nicht gefunden' });
+    const info = podcastInfo(trip.trip.id, dayId);
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json(req.user!.role === 'admin' ? info : { ...info, error: info.error ? 'Podcast-Erzeugung fehlgeschlagen' : '' });
+  }));
+  r.post('/trips/:tripId/podcasts/:dayId/regenerate', requireRole('admin'), h((req, res) => {
+    if (!podcastEnabled()) return res.status(503).json({ error: 'Podcast-Erzeugung ist nicht aktiviert.' });
+    const trip = state(req);
+    queuePodcast(trip, String(req.params.dayId), true);
+    res.status(202).json({ ok: true });
+  }));
+  r.get('/trips/:tripId/podcasts/:dayId/audio', requireRole('viewer'), h((req, res) => {
+    const trip = state(req);
+    const dayId = String(req.params.dayId);
+    if (!trip.days.some((day) => day.id === dayId)) return res.status(404).json({ error: 'Tag nicht gefunden' });
+    const audio = podcastAudio(trip.trip.id, dayId);
+    if (!audio) return res.status(404).json({ error: 'Podcast noch nicht verfügbar' });
+    res.set({ 'Cache-Control': 'private, no-store', 'Content-Type': 'audio/mpeg', 'Accept-Ranges': 'bytes' });
+    const range = req.headers.range;
+    if (range) {
+      const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+      const suffix = match && !match[1] ? Number(match[2]) : 0;
+      const start = match ? (suffix ? Math.max(0, audio.length - suffix) : Number(match[1])) : -1;
+      const end = match && match[1] && match[2] ? Math.min(Number(match[2]), audio.length - 1) : audio.length - 1;
+      if (!match || (!match[1] && (!match[2] || suffix === 0)) || start < 0 || start >= audio.length || end < start || !Number.isSafeInteger(start) || !Number.isSafeInteger(end)) {
+        res.setHeader('Content-Range', `bytes */${audio.length}`);
+        return res.sendStatus(416);
+      }
+      res.status(206).set({ 'Content-Range': `bytes ${start}-${end}/${audio.length}`, 'Content-Length': String(end - start + 1) });
+      return res.end(audio.subarray(start, end + 1));
+    }
+    res.setHeader('Content-Length', String(audio.length));
+    res.end(audio);
+  }));
 
   r.post('/trips/:tripId/location', requireRole('editor'), h((req, res) => {
     const s = state(req);

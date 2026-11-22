@@ -5,6 +5,7 @@ import { ROLE_LABEL, sortedDays } from '@neugier/shared';
 import { api, subscribeWork, workStatus } from './api';
 import { MapProvider } from './components/MapView';
 import { ShareDialog } from './components/ShareDialog';
+import { PodcastPlayer, PodcastProvider } from './components/Podcast';
 import { findToday, useOnline } from './hooks';
 import { Admin } from './pages/Admin';
 import { Chat } from './pages/Chat';
@@ -41,6 +42,7 @@ export function App({ onLogout }: { onLogout: () => void }) {
   const status = !netOnline ? 'Offline – lokale Daten' : online ? 'Live verbunden' : 'Verbinde …';
 
   return (
+    <PodcastProvider key={`${user.id}-${state.trip.id}`}>
     <MapProvider>
       <div className="app">
         <header className="topbar">
@@ -74,6 +76,7 @@ export function App({ onLogout }: { onLogout: () => void }) {
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
+        <PodcastPlayer />
         <nav className="tabbar">
           <NavLink to="/" end>
             <Map size={20} />
@@ -115,5 +118,6 @@ export function App({ onLogout }: { onLogout: () => void }) {
         </nav>
       </div>
     </MapProvider>
+    </PodcastProvider>
   );
 }
